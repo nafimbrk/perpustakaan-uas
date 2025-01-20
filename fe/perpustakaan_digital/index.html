@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perpustakaan Digital API</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Optional: Custom style for modals */
+      .modal-body input,
+      .modal-body select {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1 class="mb-4">Perpustakaan Digital</h1>
+
+      <!-- Button to open "Create" Modal -->
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        Tambah Buku
+      </button>
+
+      <!-- Table to display books -->
+      <table class="table table-bordered mt-4">
+        <thead>
+          <tr>
+            <th>Judul</th>
+            <th>Pengarang</th>
+            <th>Genre</th>
+            <th>Tahun Terbit</th>
+            <th>Penerbit</th>
+            <th>Jumlah Halaman</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="apiSelectResult">
+          <!-- Book rows will be appended here -->
+        </tbody>
+      </table>
+
+      <!-- Modal for Create -->
+      <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="createModalLabel">Tambah Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <label for="createJudul">Judul</label>
+              <input type="text" class="form-control" id="createJudul" required />
+              <label for="createPengarang" class="mt-2">Pengarang</label>
+              <input type="text" class="form-control" id="createPengarang" required />
+              <label for="createGenre" class="mt-2">Genre</label>
+              <select class="form-select" id="createGenre" required>
+                <option value="" disabled selected>Pilih Genre</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Non-Fiksi">Non-Fiksi</option>
+                <option value="Sains">Sains</option>
+              </select>
+              <label for="createTahunTerbit" class="mt-2">Tahun Terbit</label>
+              <input type="number" class="form-control" id="createTahunTerbit" required />
+              <label for="createPenerbit" class="mt-2">Penerbit</label>
+              <input type="text" class="form-control" id="createPenerbit" required />
+              <label for="createJumlahHalaman" class="mt-2">Jumlah Halaman</label>
+              <input type="number" class="form-control" id="createJumlahHalaman" required />
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+              <button type="button" class="btn btn-primary" id="saveBtn">Simpan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal for Edit -->
+      <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editModalLabel">Edit Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="editId" />
+              <label for="editJudul">Judul</label>
+              <input type="text" class="form-control" id="editJudul" required />
+              <label for="editPengarang" class="mt-2">Pengarang</label>
+              <input type="text" class="form-control" id="editPengarang" required />
+              <label for="editGenre" class="mt-2">Genre</label>
+              <select class="form-select" id="editGenre" required>
+                <option value="" disabled selected>Pilih Genre</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Non-Fiksi">Non-Fiksi</option>
+                <option value="Sains">Sains</option>
+              </select>
+              <label for="editTahunTerbit" class="mt-2">Tahun Terbit</label>
+              <input type="number" class="form-control" id="editTahunTerbit" required />
+              <label for="editPenerbit" class="mt-2">Penerbit</label>
+              <input type="text" class="form-control" id="editPenerbit" required />
+              <label for="editJumlahHalaman" class="mt-2">Jumlah Halaman</label>
+              <input type="number" class="form-control" id="editJumlahHalaman" required />
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+              <button type="button" class="btn btn-primary" id="updateBtn">Perbarui</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal for Delete -->
+      <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Hapus Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Apakah Anda yakin ingin menghapus buku ini?</p>
+              <input type="hidden" id="deleteId" />
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
+              <button type="button" class="btn btn-danger" id="deleteBtn">Hapus</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Modal for View (Lihat Buku) -->
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewModalLabel">Detail Buku</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Judul:</strong> <span id="viewJudul"></span></p>
+        <p><strong>Pengarang:</strong> <span id="viewPengarang"></span></p>
+        <p><strong>Genre:</strong> <span id="viewGenre"></span></p>
+        <p><strong>Tahun Terbit:</strong> <span id="viewTahunTerbit"></span></p>
+        <p><strong>Penerbit:</strong> <span id="viewPenerbit"></span></p>
+        <p><strong>Jumlah Halaman:</strong> <span id="viewJumlahHalaman"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- Modal Pinjam -->
+<div class="modal fade" id="modalPinjam" tabindex="-1" aria-labelledby="modalPinjamLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPinjamLabel">Form Peminjaman Buku</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formPinjam">
+          <!-- Hidden field for book ID -->
+          <input type="hidden" id="bookId">
+
+          <div class="mb-3">
+            <label for="peminjam" class="form-label">Nama Peminjam</label>
+            <input type="text" class="form-control" id="peminjam" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="tanggalPinjam" class="form-label">Tanggal Pinjam</label>
+            <input type="date" class="form-control" id="tanggalPinjam" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="tanggalKembali" class="form-label">Tanggal Kembali</label>
+            <input type="date" class="form-control" id="tanggalKembali" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="kontak" class="form-label">Kontak Peminjam</label>
+            <input type="text" class="form-control" id="kontak" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="catatan" class="form-label">Catatan</label>
+            <textarea class="form-control" id="catatan" rows="3"></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            <button type="submit" class="btn btn-primary">Pinjam Buku</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Modal Pinjam -->
+
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const apiUrl = "http://127.0.0.1:8000/api/books"; // Replace with your actual API URL
+
+      // Fetch all books using jQuery
+      function fetchBooks() {
+        $.ajax({
+          url: apiUrl,
+          method: "GET",
+          success: function(data) {
+            const tableBody = $("#apiSelectResult");
+            tableBody.empty();
+            data.data.forEach((book) => {
+              tableBody.append(`
+                <tr>
+                  <td>${book.judul}</td>
+                  <td>${book.pengarang}</td>
+                  <td>${book.genre}</td>
+                  <td>${book.tahun_terbit}</td>
+                  <td>${book.penerbit}</td>
+                  <td>${book.jumlah_halaman}</td>
+                  <td>
+                    <button class="btn btn-info btn-sm" onclick="viewBook(${book.id})">Lihat</button>
+                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${book.id})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${book.id})">Hapus</button>
+                    <button 
+  id="btnPinjam-${book.id}" 
+  class="btn btn-success btn-sm" 
+  ${book.pinjam ? "disabled" : ""} 
+  onclick="showModal(${book.id})">
+  ${book.pinjam ? "Sedang Dipinjam" : "Pinjam"}
+</button>
+
+                    <button class="btn btn-warning btn-sm" onclick="updateFavorit(${book.id})">Favorit</button>
+                  </td>
+                </tr>
+              `);
+            });
+          },
+          error: function(error) {
+            console.error("Error fetching books:", error);
+          }
+        });
+      }
+
+      // Open Edit Modal with book data
+      function openEditModal(id) {
+        $.ajax({
+          url: `${apiUrl}/${id}`,
+          method: "GET",
+          success: function(book) {
+            $("#editId").val(book.data.id);
+            $("#editJudul").val(book.data.judul);
+            $("#editPengarang").val(book.data.pengarang);
+            $("#editGenre").val(book.data.genre);
+            $("#editTahunTerbit").val(book.data.tahun_terbit);
+            $("#editPenerbit").val(book.data.penerbit);
+            $("#editJumlahHalaman").val(book.data.jumlah_halaman);
+            $("#editModal").modal("show");
+          },
+          error: function(error) {
+            console.error("Error fetching book for edit:", error);
+          }
+        });
+      }
+
+      // Update Book
+      $("#updateBtn").on("click", function() {
+        const id = $("#editId").val();
+        const updatedBook = {
+          judul: $("#editJudul").val(),
+          pengarang: $("#editPengarang").val(),
+          genre: $("#editGenre").val(),
+          tahun_terbit: $("#editTahunTerbit").val(),
+          penerbit: $("#editPenerbit").val(),
+          jumlah_halaman: $("#editJumlahHalaman").val()
+        };
+
+        $.ajax({
+          url: `${apiUrl}/${id}`,
+          method: "PUT",
+          data: updatedBook,
+          success: function() {
+            $("#editModal").modal("hide");
+            fetchBooks();
+          },
+          error: function(error) {
+            console.error("Error updating book:", error);
+          }
+        });
+      });
+
+      // Open Delete Modal
+      function openDeleteModal(id) {
+        $("#deleteId").val(id);
+        $("#deleteModal").modal("show");
+      }
+
+      // Delete Book
+      $("#deleteBtn").on("click", function() {
+        const id = $("#deleteId").val();
+
+        $.ajax({
+          url: `${apiUrl}/${id}`,
+          method: "DELETE",
+          success: function() {
+            $("#deleteModal").modal("hide");
+            fetchBooks();
+          },
+          error: function(error) {
+            console.error("Error deleting book:", error);
+          }
+        });
+      });
+
+      // Save New Book
+      $("#saveBtn").on("click", function() {
+        const newBook = {
+          judul: $("#createJudul").val(),
+          pengarang: $("#createPengarang").val(),
+          genre: $("#createGenre").val(),
+          tahun_terbit: $("#createTahunTerbit").val(),
+          penerbit: $("#createPenerbit").val(),
+          jumlah_halaman: $("#createJumlahHalaman").val()
+        };
+
+        $.ajax({
+          url: apiUrl,
+          method: "POST",
+          data: newBook,
+          success: function() {
+            $("#createModal").modal("hide");
+            fetchBooks();
+          },
+          error: function(error) {
+            console.error("Error saving new book:", error);
+          }
+        });
+      });
+
+      // View Book (Lihat Buku)
+function viewBook(id) {
+  $.ajax({
+    url: `${apiUrl}/${id}`,
+    method: "GET",
+    success: function(book) {
+      $("#viewJudul").text(book.data.judul);
+      $("#viewPengarang").text(book.data.pengarang);
+      $("#viewGenre").text(book.data.genre);
+      $("#viewTahunTerbit").text(book.data.tahun_terbit);
+      $("#viewPenerbit").text(book.data.penerbit);
+      $("#viewJumlahHalaman").text(book.data.jumlah_halaman);
+      $("#viewModal").modal("show");
+    },
+    error: function(error) {
+      console.error("Error fetching book for view:", error);
+    }
+  });
+}
+
+
+      // Initial fetch
+      $(document).ready(function() {
+        fetchBooks();
+      });
+    </script>
+
+    <script>
+      const apiPinjamUrl = "http://127.0.0.1:8000/api/pinjam"; // Replace with your actual API URL for pinjam
+    
+      // Fungsi untuk menampilkan modal
+      function showModal(bookId) {
+        $("#bookId").val(bookId); // Set ID buku di input hidden
+        $("#modalPinjam").modal("show"); // Tampilkan modal menggunakan jQuery
+      }
+    
+      $("#formPinjam").on("submit", function(event) {
+        event.preventDefault(); // Prevent form from submitting normally
+      
+        const bookId = $("#bookId").val();
+        const peminjam = $("#peminjam").val();
+        const tanggalPinjam = $("#tanggalPinjam").val();
+        const tanggalKembali = $("#tanggalKembali").val();
+        const kontak = $("#kontak").val();
+        const catatan = $("#catatan").val();
+      
+        $.ajax({
+          url: apiPinjamUrl,
+          method: "POST",
+          data: {
+            book_id: bookId,
+            peminjam: peminjam,
+            tanggal_pinjam: tanggalPinjam,
+            tanggal_kembali: tanggalKembali,
+            kontak: kontak,
+            catatan: catatan,
+            _token: $('meta[name="csrf-token"]').attr('content') // Untuk menghindari CSRF error
+          },
+          success: function(response) {
+            if (response.success) {
+              alert("Buku berhasil dipinjam!");
+              $("#modalPinjam").modal("hide");
+              fetchBooks(); // Untuk memperbarui daftar buku
+            } else {
+              alert(response.message); // Jika buku sudah dipinjam
+            }
+          },
+          error: function(error) {
+            console.error("Error:", error);
+          }
+        });
+      });
+      
+    </script>
+    
+  </body>
+</html>

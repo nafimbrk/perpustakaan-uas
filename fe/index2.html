@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      /*for table*/
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+    <style>
+      /*for toast*/
+      .toast {
+        background-color: #333;
+        color: white;
+        padding: 10px 20px;
+        margin: 5px;
+        border-radius: 5px;
+        opacity: 0.9;
+        transition: opacity 0.5s ease;
+        position: relative;
+        animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 0.9;
+        }
+      }
+
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <h1>IndexedDB Operations</h1>
+
+      <h2>Create</h2>
+      <label for="idbInsertJudul">Judul</label>
+      <input type="text" id="idbInsertJudul" required />
+      <br />
+      <label for="idbInsertPengarang">Pengarang</label>
+      <input type="text" id="idbInsertPengarang" required />
+      <br />
+      <label for="idbInsertGenre">Genre</label>
+      <select name="" id="idbInsertGenre" required>
+        <option value="" disabled selected>Pilih Genre</option>
+        <option value="Fiksi">Fiksi</option>
+        <option value="Non-Fiksi">Non-Fiksi</option>
+        <option value="Sains">Sains</option>
+      </select>
+      <br />
+      <label for="idbInsertTahunTerbit">Tahun Terbit</label>
+      <input type="number" id="idbInsertTahunTerbit" required />
+      <br />
+      <label for="idbInsertPenerbit">Penerbit</label>
+      <input type="text" id="idbInsertPenerbit" required />
+      <br />
+      <label for="idbInsertJumlahHalaman">Jumlah Halaman</label>
+      <input type="number" id="idbInsertJumlahHalaman" required />
+      <br />
+      <button onclick="idb_insert()">Insert</button>
+
+      <h2>Read</h2>
+      <input type="text" id="idbFindId" placeholder="Kode to find" required />
+      <button onclick="idb_find()">Find</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Nama</th>
+            <th>SKS</th>
+          </tr>
+        </thead>
+        <tbody id="idbFindResult">
+          <!-- Result will be displayed here -->
+        </tbody>
+      </table>
+
+      <h2>Update</h2>
+      <input type="text" id="idbUpdateId" placeholder="id" required />
+    <br>
+    <label for="idbUpdateJudul">Judul</label>
+    <input type="text" id="idbUpdateJudul" required />
+    <br />
+    <label for="idbUpdatePengarang">Pengarang</label>
+    <input type="text" id="idbUpdatePengarang" required />
+    <br />
+    <label for="idbUpdateGenre">Genre</label>
+    <select name="" id="idbUpdateGenre" required>
+      <option value="" disabled selected>Pilih Genre</option>
+      <option value="Fiksi">Fiksi</option>
+      <option value="Non-Fiksi">Non-Fiksi</option>
+      <option value="Sains">Sains</option>
+    </select>
+    <br />
+    <label for="idbUpdateTahunTerbit">Tahun Terbit</label>
+    <input type="number" id="idbUpdateTahunTerbit" required />
+    <br />
+    <label for="idbUpdatePenerbit">Penerbit</label>
+    <input type="text" id="idbUpdatePenerbit" required />
+    <br />
+    <label for="idbUpdateJumlahHalaman">Jumlah Halaman</label>
+    <input type="number" id="idbUpdateJumlahHalaman" required />
+    <br />
+      <button onclick="idb_update()">Update</button>
+
+      <h2>Delete</h2>
+      <input
+        type="text"
+        id="idbDeleteId"
+        placeholder="Id"
+        required
+      />
+      <button onclick="idb_delete()">Delete</button>
+
+      <h2>Select All</h2>
+      <button onclick="idb_displayAllResources()">Retrieve All</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Judul</th>
+            <th>Pengarang</th>
+            <th>Genre</th>
+            <th>Tahun Terbit</th>
+            <th>Penerbit</th>
+            <th>Jumlah Halaman</th>
+          </tr> 
+        </thead>
+        <tbody id="idbSelectResult">
+          <!-- All results will be displayed here -->
+        </tbody>
+      </table>
+    </section>
+
+    <script src="script2.js"></script>
+  </body>
+</html>

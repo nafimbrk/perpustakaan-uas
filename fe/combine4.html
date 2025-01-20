@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Operations</title>
+    <style> /*for table*/
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <style> /*for toast*/
+        .toast {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            opacity: 0.9;
+            transition: opacity 0.5s ease;
+            position: relative;
+            animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
+        }
+    
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 0.9;
+            }
+        }
+    
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <script> /*for toast*/
+        function showToast(message) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+
+            toastContainer.appendChild(toast);
+
+            // Remove the toast after the animation is complete
+            setTimeout(() => {
+                toastContainer.removeChild(toast);
+            }, 3000); // Adjust the time as needed (3000ms = 3 seconds)
+        }
+    </script>
+
+    <script> /*indexeddb functions*/
+        // Open (or create) the database
+        let db;
+        const request = indexedDB.open('MyDatabase', 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            const resourcesStore = db.createObjectStore('resources', { keyPath: 'kode' }); // Existing store
+            const mkStore = db.createObjectStore('mk', { keyPath: 'kode' }); // New store for mk
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+        };
+
+        request.onerror = function(event) {
+            console.error('Database error:', event.target.errorCode);
+        };
+
+        // Function to add a new resource to IndexedDB
+        function idb_addResource(resource) {
+            const transaction = db.transaction(['resources'], 'readwrite');
+            const objectStore = transaction.objectStore('resources');
+            const request = objectStore.add(resource);
+
+            request.onsuccess = function() {
+                console.log('Resource added to IndexedDB:', resource);
+            };
+
+            request.onerror = function(event) {
+                console.error('Error adding resource:', event.target.error);
+            };
+        }
+
+        // Function to retrieve all resources from IndexedDB and display them
+        function idb_getAllResources() {
+            const transaction = db.transaction(['resources'], 'readonly');
+            const objectStore = transaction.objectStore('resources');
+            const request = objectStore.getAll();
+
+            request.onsuccess = function(event) {
+                const data = event.target.result;
+                console.log('All resources:', data);
+
+                // Clear previous results
+                const resultTable = document.getElementById('idbSelectResult');
+                resultTable.innerHTML = '';
+
+                // Populate the table with the retrieved data
+                data.forEach(item => {
+                    const row = `<tr>
+                                    <td>${item.kode}</td>
+                                    <td>${item.nama}</td>
+                                    <td>${item.sks}</td>
+                                </tr>`;
+                    resultTable.innerHTML += row;
+                });
+            };
+
+            request.onerror = function(event) {
+                console.error('Error retrieving resources:', event.target.error);
+            };
+        }
+
+        // Function to find a resource by kode in IndexedDB and display the result
+        function idb_findResourceByKode(kode) {
+            const transaction = db.transaction(['resources'], 'readonly');
+            const objectStore = transaction.objectStore('resources');
+            const request = objectStore.get(kode);
+
+            request.onsuccess = function(event) {
+                const resource = event.target.result;
+                const resultTable = document.getElementById('idbFindResult'); // Get the result table
+                resultTable.innerHTML = ''; // Clear previous results
+
+                if (resource) {
+                    console.log('Resource found:', resource);
+                    // Populate the table with the found resource
+                    const row = `<tr>
+                                    <td>${resource.kode}</td>
+                                    <td>${resource.nama}</td>
+                                    <td>${resource.sks}</td>
+                                </tr>`;
+                    resultTable.innerHTML = row; // Display the found resource
+                } else {
+                    console.log('No resource found with kode:', kode);
+                    resultTable.innerHTML = '<tr><td colspan="3">No resource found</td></tr>'; // Display no resource found message
+                }
+            };
+
+            request.onerror = function(event) {
+                console.error('Error finding resource:', event.target.error);
+            };
+        }
+
+        // Function to update a resource in IndexedDB
+        function idb_updateResource(resource) {
+            const transaction = db.transaction(['resources'], 'readwrite');
+            const objectStore = transaction.objectStore('resources');
+            const request = objectStore.put(resource); // Use 'kode' as the key
+
+            request.onsuccess = function() {
+                console.log('Resource updated in IndexedDB:', resource);
+            };
+
+            request.onerror = function(event) {
+                console.error('Error updating resource:', event.target.error);
+            };
+        }
+
+        // Function to delete a resource by kode from IndexedDB
+        function idb_deleteResourceByKode(kode) {
+            const transaction = db.transaction(['resources'], 'readwrite');
+            const objectStore = transaction.objectStore('resources');
+            const request = objectStore.delete(kode);
+
+            request.onsuccess = function() {
+                console.log('Resource deleted from IndexedDB with kode:', kode);
+            };
+
+            request.onerror = function(event) {
+                console.error('Error deleting resource:', event.target.error);
+            };
+        }
+    </script>
+
+    <script>/*retrieve data from input and pass then to indexeddb functions*/
+        // Function to insert a new resource from input fields
+        function idb_insert() {
+            const kode = document.getElementById('idbInsertKode').value;
+            const nama = document.getElementById('idbInsertNama').value;
+            const sks = document.getElementById('idbInsertSks').value;
+
+            // Create a resource object
+            const resource = {
+                kode: kode, // Use 'kode' as the primary key ```html
+                nama: nama,
+                sks: sks
+            };
+
+            // Call the idb_addResource function with the resource object
+            idb_addResource(resource);
+        }
+
+        // Function to retrieve all resources and display them
+        function idb_displayAllResources() {
+            idb_getAllResources(); // Call the function to get all resources
+        }
+
+        // Function to find a resource by kode from input field
+        function idb_find() {
+            const kode = document.getElementById('idbFindId').value; // Updated ID
+            idb_findResourceByKode(kode); // Call the function to find the resource
+        }
+
+        // Function to update a resource from input fields
+        function idb_update() {
+            const kode = document.getElementById('idbUpdateKode').value; // Updated ID
+            const nama = document.getElementById('idbUpdateNama').value;
+            const sks = document.getElementById('idbUpdateSks').value;
+
+            // Create a resource object
+            const resource = {
+                kode: kode, // Use 'kode' as the primary key
+                nama: nama,
+                sks: sks
+            };
+
+            // Call the idb_updateResource function with the resource object
+            idb_updateResource(resource);
+        }
+
+        // Function to delete a resource by kode from input field
+        function idb_delete() {
+            const kode = document.getElementById('idbDeleteId').value; // Updated ID
+            idb_deleteResourceByKode(kode); // Call the function to delete the resource
+        }
+    </script>
+
+    <script>/*API functions*/
+        const apiUrl = 'http://127.0.0.1:8000/api/mk'; // Replace with your actual API URL
+
+        // Function to create a new resource
+        async function insert() {
+            const kode = document.getElementById('apiInsertKode').value; // Updated ID
+            const nama = document.getElementById('apiInsertNama').value; // Updated ID
+            const sks = document.getElementById('apiInsertSks').value; // Updated ID
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ kode, nama, sks })
+                });
+
+                const data = await response.json();
+                console.log(data);
+            } catch (error) {
+                console.error('Fetch error:', error);
+            }
+        }
+
+        // Function to retrieve all resources
+        async function select() {
+            const resultTable = document.getElementById('apiSelectResult'); // Updated ID
+
+            try {
+                const response = await fetch(apiUrl, { method: 'GET' });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                console.log(data); // Log the data to see its structure
+
+                // Clear previous results
+                resultTable.innerHTML = '';
+
+                // Check if data.data is an array
+                if (Array.isArray(data.data)) {
+                    data.data.forEach(item => {
+                        const row = `<tr>
+                                        <td>${item.kode}</td>
+                                        <td>${item.nama}</td>
+                                        <td>${item.sks}</td>
+                                    </tr>`;
+                        resultTable.innerHTML += row;
+                    });
+                } else {
+                    console.error('Expected an array but got:', data);
+                    resultTable.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+            }
+        }
+
+        // Function to find a resource by ID
+        async function find() {
+            const id = document.getElementById('apiFindId').value; // Updated ID
+            const resultTable = document.getElementById('apiFindResult'); // Updated ID
+
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, { method: 'GET' });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const result = await response.json(); // Store the entire response
+
+                // Clear previous results
+                resultTable.innerHTML = '';
+
+                // Check if the response has a successful status and contains data
+                if (result.status && result.data) {
+                    const data = result.data; // Access the data property
+                    const row = `<tr>
+                                    <td>${id}</td> <!-- Assuming ID is the same as the input ID -->
+                                    <td>${data.kode}</td>
+                                    <td>${data.nama}</td>
+                                    <td>${data.sks}</td>
+                                </tr>`;
+                    resultTable.innerHTML = row;
+                } else {
+                    console.error('Expected an object but got:', result);
+                    resultTable.innerHTML = '<tr><td colspan="4">No data found</td></tr>';
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+            }
+        }
+
+        // Function to update a resource by ID
+        async function update() {
+            const id = document.getElementById('apiUpdateId').value; // Updated ID
+            const kode = document.getElementById('apiUpdateKode').value; // Updated ID
+            const nama = document.getElementById('apiUpdateNama').value; // Updated ID
+            const sks = document.getElementById('apiUpdateSks').value; // Updated ID
+
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ kode, nama, sks })
+                });
+
+                const data = await response.json();
+                console.log(data);
+            } catch (error) {
+                console.error('Fetch error:', error);
+            }
+        }
+
+        // Function to delete a resource by ID
+        async function deleteResource() {
+            const id = document.getElementById('apiDeleteId').value; // Updated ID
+
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                console.log(data.message);
+            } catch (error) {
+                console.error('Error deleting resource:', error);
+            }
+        }
+    </script>
+
+    <script>/*api+indexeddb*/
+        // Function to dump all data retrieved from the API to the "mk" IndexedDB store
+        async function dumpDataToIndexedDB() {
+            try {
+                const response = await fetch(apiUrl, { method: 'GET' });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                // Check if data.data is an array
+                if (Array.isArray(data.data)) {
+                    const transaction = db.transaction(['mk'], 'readwrite'); // Use the new "mk" store
+                    const mkObjectStore = transaction.objectStore('mk');
+
+                    data.data.forEach(item => {
+                        const resource = {
+                            kode: item.kode,
+                            nama: item.nama,
+                            sks: item.sks
+                        };
+                        mkObjectStore.add(resource); // Add each resource to the "mk" store
+                    });
+
+                    transaction.oncomplete = function() {
+                        console.log('All data dumped to the "mk" store in IndexedDB successfully.');
+                    };
+
+                    transaction.onerror = function(event) {
+                        console.error('Error adding data to the "mk" store:', event.target.error);
+                    };
+                } else {
+                    console.error('Expected an array but got:', data);
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+            }
+        }
+        
+        // Function to insert a resource into the server
+        async function insertResourceToServer(resource) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(resource)
+                });
+
+                if (!response.ok) throw new Error('Failed to insert resource into server');
+                const data = await response.json();
+                console.log('Resource inserted into server:', data);
+            } catch (error) {
+                console.error('Error inserting resource into server:', error);
+            }
+        }
+
+        // Function to synchronize data between the server and the "mk" IndexedDB store
+        function synchronizeData() {
+            //get data from resource
+            const transaction = db.transaction(['resources'], 'readwrite');
+            const resourcesObjectStore = transaction.objectStore('resources');
+            const existingResourcesRequest = resourcesObjectStore.getAll();
+
+            existingResourcesRequest.onsuccess = function(event) {
+                const existingResources = event.target.result; // Get the result from the request
+                const resourcesToInsert = [];
+
+                // Collect resources to insert into the server
+                existingResources.forEach(item => {
+                    resourcesToInsert.push(item);
+                });
+
+                // Insert resources into the server
+                Promise.all(resourcesToInsert.map(resource => insertResourceToServer(resource)))
+                    .then(() => {
+                        // Fetch data from the server after uploading
+                        return fetch(apiUrl, { method: 'GET' });
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Check if data.data is an array
+                        if (Array.isArray(data.data)) {
+                            const mkTransaction = db.transaction(['mk'], 'readwrite'); // Use only "mk" store
+                            const mkObjectStore = mkTransaction.objectStore('mk');
+
+                            // Add new data to the "mk" store
+                            let putRequests = [];
+                            data.data.forEach(item => {
+                                const resource = {
+                                    kode: item.kode,
+                                    nama: item.nama,
+                                    sks: item.sks
+                                };
+                                // Check if the resource already exists in the "mk" store
+                                const existsInMKRequest = mkObjectStore.get(resource.kode);
+                                existsInMKRequest.onsuccess = function(event) {
+                                    if (!event.target.result) {
+                                        // If it doesn't exist, add it to the putRequests array
+                                        putRequests.push(mkObjectStore.put(resource)); // Use put to add or update
+                                    }
+                                };
+                            });
+
+                            // After processing all put requests, clear the "resources" store
+                            mkTransaction.oncomplete = function() {
+                                // Wait for all put requests to complete
+                                Promise.all(putRequests).then(() => {
+                                    // Clear the "resources" store in a new transaction
+                                    const clearTransaction = db.transaction(['resources'], 'readwrite');
+                                    const clearObjectStore = clearTransaction.objectStore('resources');
+                                    clearObjectStore.clear();
+
+                                    showToast('Synchronization complete. Resources uploaded to the server and mk store updated.');
+                                }).catch(error => {
+                                    console.error('Error during put requests:', error);
+                                });
+                            };
+
+                            mkTransaction.onerror = function(event) {
+                                console.error('Error during mk store update:', event.target.error);
+                            };
+                        } else {
+                            console.error('Expected an array but got:', data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                    });
+            };
+
+            existingResourcesRequest.onerror = function(event) {
+                console.error('Error retrieving existing resources:', event.target.error);
+            };
+        }
+    </script>
+</head>
+<body>
+    <section>
+        <h1>API Operations</h1>
+
+        <h2>Create</h2>
+        <input type="text" id="apiInsertKode" placeholder="Kode" required>
+        <input type="text" id="apiInsertNama" placeholder="Nama" required>
+        <input type="number" id="apiInsertSks" placeholder="SKS" required>
+        <button onclick="insert()">Insert</button>
+
+        <h2>Read</h2>
+        <input type="text" id="apiFindId" placeholder="ID to find" required>
+        <button onclick="find()">Find</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Kode</th>
+                    <th>Nama</th>
+                    <th>SKS</th>
+                </tr>
+            </thead>
+            <tbody id="apiFindResult">
+                <!-- Result will be displayed here -->
+            </tbody>
+        </table>
+
+        <h2>Update</h2>
+        <input type="text" id="apiUpdateId" placeholder="ID to update" required>
+        <input type="text" id="apiUpdateKode" placeholder="New Kode" required>
+        <input type="text" id="apiUpdateNama" placeholder="New Nama" required>
+        <input type="number" id="apiUpdateSks" placeholder="New SKS" required>
+        <button onclick="update()">Update</button>
+
+        <h2>Delete</h2>
+        <input type="text" id="apiDeleteId" placeholder="ID to delete" required>
+        <button onclick="deleteResource()">Delete</button>
+
+        <h2>Select All</h2>
+        <button onclick="select()">Retrieve All</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama</th>
+                    <th>SKS</th>
+                </tr>
+            </thead>
+            <tbody id="apiSelectResult">
+                <!-- All results will be displayed here -->
+            </tbody>
+        </table>
+    </section>
+    <br><br><hr><hr><br>
+    <section>
+        <h1>IndexedDB Operations</h1>
+
+        <h2>Create</h2>
+        <input type="text" id="idbInsertKode" placeholder="Kode" required>
+        <input type="text" id="idbInsertNama" placeholder="Nama" required>
+        <input type="number" id="idbInsertSks" placeholder="SKS" required>
+        <button onclick="idb_insert()">Insert</button>
+
+        <h2>Read</h2>
+        <input type="text" id="idbFindId" placeholder="Kode to find" required>
+        <button onclick="idb_find()">Find</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama</th>
+                    <th>SKS</th>
+                </tr>
+            </thead>
+            <tbody id="idbFindResult">
+                <!-- Result will be displayed here -->
+            </tbody>
+        </table>
+
+        <h2>Update</h2>
+        <input type="text" id="idbUpdateKode" placeholder="Kode to update" required>
+        <input type="text" id="idbUpdateNama" placeholder="New Nama" required>
+        <input type="number" id="idbUpdateSks" placeholder="New SKS" required>
+        <button onclick="idb_update()">Update</button>
+
+        <h2>Delete</h2>
+        <input type="text" id="idbDeleteId" placeholder="Kode to delete" required>
+        <button onclick="idb_delete()">Delete</button>
+
+        <h2>Select All</h2>
+        <button onclick="idb_displayAllResources()">Retrieve All</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama</th>
+                    <th>SKS</th>
+                </tr>
+            </thead>
+            <tbody id="idbSelectResult">
+                <!-- All results will be displayed here -->
+            </tbody>
+        </table>
+    </section>
+    <br><br><hr><hr><br>
+    <section>
+        <h2>Dump API Data to IndexedDB</h2>
+        <button onclick="dumpDataToIndexedDB()">Dump Data</button>
+
+        <h2>Synchronize Data with Server</h2>
+        <button onclick="synchronizeData()">Synchronize</button>    
+    </section>
+    <div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;"></div>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perpustakaan Digital API</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Optional: Custom style for modals */
+      .modal-body input,
+      .modal-body select {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1 class="mb-4">Perpustakaan Digital</h1>
+  
+      <!-- Button to open "Create" Modal -->
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        Tambah Buku
+      </button>
+  
+      <!-- Table to display books -->
+      <table class="table table-bordered mt-4">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Judul</th>
+            <th>Pengarang</th>
+            <th>Genre</th>
+            <th>Tahun Terbit</th>
+            <th>Penerbit</th>
+            <th>Jumlah Halaman</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Book rows will be appended here -->
+        </tbody>
+      </table>
+  
+      <!-- Modal for Create -->
+      <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="createModalLabel">Tambah Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <label for="createJudul">Judul</label>
+              <input type="text" class="form-control" id="createJudul" required>
+              <label for="createPengarang" class="mt-2">Pengarang</label>
+              <input type="text" class="form-control" id="createPengarang" required>
+              <label for="createGenre" class="mt-2">Genre</label>
+              <select class="form-select" id="createGenre" required>
+                <option value="" disabled selected>Pilih Genre</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Non-Fiksi">Non-Fiksi</option>
+                <option value="Sains">Sains</option>
+              </select>
+              <label for="createTahunTerbit" class="mt-2">Tahun Terbit</label>
+              <input type="number" class="form-control" id="createTahunTerbit" required>
+              <label for="createPenerbit" class="mt-2">Penerbit</label>
+              <input type="text" class="form-control" id="createPenerbit" required>
+              <label for="createJumlahHalaman" class="mt-2">Jumlah Halaman</label>
+              <input type="number" class="form-control" id="createJumlahHalaman" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+              <button type="button" class="btn btn-primary" onclick="insert()">Simpan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Modal for Edit -->
+      <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editModalLabel">Edit Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="editId">
+              <label for="editJudul">Judul</label>
+              <input type="text" class="form-control" id="editJudul" required>
+              <label for="editPengarang" class="mt-2">Pengarang</label>
+              <input type="text" class="form-control" id="editPengarang" required>
+              <label for="editGenre" class="mt-2">Genre</label>
+              <select class="form-select" id="editGenre" required>
+                <option value="" disabled selected>Pilih Genre</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Non-Fiksi">Non-Fiksi</option>
+                <option value="Sains">Sains</option>
+              </select>
+              <label for="editTahunTerbit" class="mt-2">Tahun Terbit</label>
+              <input type="number" class="form-control" id="editTahunTerbit" required>
+              <label for="editPenerbit" class="mt-2">Penerbit</label>
+              <input type="text" class="form-control" id="editPenerbit" required>
+              <label for="editJumlahHalaman" class="mt-2">Jumlah Halaman</label>
+              <input type="number" class="form-control" id="editJumlahHalaman" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+              <button type="button" class="btn btn-primary" onclick="update()">Perbarui</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Modal for Delete -->
+      <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Hapus Buku</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Apakah Anda yakin ingin menghapus buku ini?</p>
+              <input type="hidden" id="deleteId">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
+              <button type="button" class="btn btn-danger" onclick="deleteBook()">Hapus</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  const dbName = "LibraryDB";
+  const storeName = "Books";
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, 1);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+        }
+      };
+      request.onsuccess = (event) => resolve(event.target.result);
+      request.onerror = (event) => reject(event.target.error);
+    });
+  }
+
+  async function fetchBooks() {
+    const db = await openDB();
+    const transaction = db.transaction(storeName, "readonly");
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const books = request.result;
+      const tableBody = $("#tableBody");
+      tableBody.empty();
+
+      books.forEach((book, index) => {
+        const row = `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${book.judul}</td>
+            <td>${book.pengarang}</td>
+            <td>${book.genre}</td>
+            <td>${book.tahunTerbit}</td>
+            <td>${book.penerbit}</td>
+            <td>${book.jumlahHalaman}</td>
+            <td>
+              <button class="btn btn-warning btn-sm edit-btn" data-id="${book.id}">Edit</button>
+              <button class="btn btn-danger btn-sm delete-btn" data-id="${book.id}">Hapus</button>
+            </td>
+          </tr>`;
+        tableBody.append(row);
+      });
+    };
+
+    request.onerror = () => console.error("Error fetching data");
+  }
+
+  async function insert() {
+    const db = await openDB();
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+
+    const book = {
+      judul: $("#createJudul").val(),
+      pengarang: $("#createPengarang").val(),
+      genre: $("#createGenre").val(),
+      tahunTerbit: $("#createTahunTerbit").val(),
+      penerbit: $("#createPenerbit").val(),
+      jumlahHalaman: $("#createJumlahHalaman").val(),
+    };
+
+    store.add(book).onsuccess = () => {
+      $("#createModal").modal("hide");
+      fetchBooks();
+    };
+  }
+
+  function openEditModal(id) {
+    openDB().then((db) => {
+      const transaction = db.transaction(storeName, "readonly");
+      const store = transaction.objectStore(storeName);
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        const book = request.result;
+        $("#editId").val(book.id);
+        $("#editJudul").val(book.judul);
+        $("#editPengarang").val(book.pengarang);
+        $("#editGenre").val(book.genre);
+        $("#editTahunTerbit").val(book.tahunTerbit);
+        $("#editPenerbit").val(book.penerbit);
+        $("#editJumlahHalaman").val(book.jumlahHalaman);
+        $("#editModal").modal("show");
+      };
+    });
+  }
+
+  async function update() {
+    const db = await openDB();
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+
+    const book = {
+      id: parseInt($("#editId").val(), 10),
+      judul: $("#editJudul").val(),
+      pengarang: $("#editPengarang").val(),
+      genre: $("#editGenre").val(),
+      tahunTerbit: $("#editTahunTerbit").val(),
+      penerbit: $("#editPenerbit").val(),
+      jumlahHalaman: $("#editJumlahHalaman").val(),
+    };
+
+    store.put(book).onsuccess = () => {
+      $("#editModal").modal("hide");
+      fetchBooks();
+    };
+  }
+
+  function openDeleteModal(id) {
+    $("#deleteId").val(id);
+    $("#deleteModal").modal("show");
+  }
+
+  async function deleteBook() {
+    const db = await openDB();
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+
+    const id = parseInt($("#deleteId").val(), 10);
+
+    store.delete(id).onsuccess = () => {
+      $("#deleteModal").modal("hide");
+      fetchBooks();
+    };
+  }
+
+  $(document).ready(() => {
+    fetchBooks();
+
+    // Handle click events
+    $(document).on("click", ".edit-btn", function () {
+      const id = $(this).data("id");
+      openEditModal(id);
+    });
+
+    $(document).on("click", ".delete-btn", function () {
+      const id = $(this).data("id");
+      openDeleteModal(id);
+    });
+
+    // Handle form submissions
+    $("#createModal .btn-primary").click(insert);
+    $("#editModal .btn-primary").click(update);
+    $("#deleteModal .btn-danger").click(deleteBook);
+  });
+</script>
+
+  
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

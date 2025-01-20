@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      /*for table*/
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+    <style>
+      /*for toast*/
+      .toast {
+        background-color: #333;
+        color: white;
+        padding: 10px 20px;
+        margin: 5px;
+        border-radius: 5px;
+        opacity: 0.9;
+        transition: opacity 0.5s ease;
+        position: relative;
+        animation: slideIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 0.9;
+        }
+      }
+
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <h1>Perpustakaan Digital API</h1>
+      
+      <h2>Create</h2>
+    <label for="apiInsertJudul">Judul</label>
+    <input type="text" id="apiInsertJudul" required />
+    <br />
+    <label for="apiInsertPengarang">Pengarang</label>
+    <input type="text" id="apiInsertPengarang" required />
+    <br />
+    <label for="apiInsertGenre">Genre</label>
+    <select name="" id="apiInsertGenre" required>
+      <option value="" disabled selected>Pilih Genre</option>
+      <option value="Fiksi">Fiksi</option>
+      <option value="Non-Fiksi">Non-Fiksi</option>
+      <option value="Sains">Sains</option>
+    </select>
+    <br />
+    <label for="apiInsertTahunTerbit">Tahun Terbit</label>
+    <input type="number" id="apiInsertTahunTerbit" required />
+    <br />
+    <label for="apiInsertPenerbit">Penerbit</label>
+    <input type="text" id="apiInsertPenerbit" required />
+    <br />
+    <label for="apiInsertJumlahHalaman">Jumlah Halaman</label>
+    <input type="number" id="apiInsertJumlahHalaman" required />
+    <br />
+    <button onclick="insert()">Insert</button>
+
+    <h2>Select All</h2>
+    <button onclick="select()">Retrieve All</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Judul</th>
+          <th>Pengarang</th>
+          <th>Genre</th>
+          <th>Tahun Terbit</th>
+          <th>Penerbit</th>
+          <th>Jumlah Halaman</th>
+        </tr>
+      </thead>
+      <tbody id="apiSelectResult">
+        <!-- All results will be displayed here -->
+      </tbody>
+    </table>
+
+    <h2>Read</h2>
+    <input type="text" id="apiFindId" placeholder="id" required />
+    <button onclick="find()">Find</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Judul</th>
+          <th>Pengarang</th>
+          <th>Genre</th>
+          <th>Tahun Terbit</th>
+          <th>Penerbit</th>
+          <th>Jumlah Halaman</th>
+        </tr>
+      </thead>
+      <tbody id="apiFindResult">
+        <!-- Result will be displayed here -->
+      </tbody>
+    </table>
+
+    <h2>Update</h2>
+    <input type="text" id="apiUpdateId" placeholder="id" required />
+    <br>
+    <label for="apiUpdateJudul">Judul</label>
+    <input type="text" id="apiUpdateJudul" required />
+    <br />
+    <label for="apiUpdatePengarang">Pengarang</label>
+    <input type="text" id="apiUpdatePengarang" required />
+    <br />
+    <label for="apiUpdateGenre">Genre</label>
+    <select name="" id="apiUpdateGenre" required>
+      <option value="" disabled selected>Pilih Genre</option>
+      <option value="Fiksi">Fiksi</option>
+      <option value="Non-Fiksi">Non-Fiksi</option>
+      <option value="Sains">Sains</option>
+    </select>
+    <br />
+    <label for="apiUpdateTahunTerbit">Tahun Terbit</label>
+    <input type="number" id="apiUpdateTahunTerbit" required />
+    <br />
+    <label for="apiUpdatePenerbit">Penerbit</label>
+    <input type="text" id="apiUpdatePenerbit" required />
+    <br />
+    <label for="apiUpdateJumlahHalaman">Jumlah Halaman</label>
+    <input type="number" id="apiUpdateJumlahHalaman" required />
+    <br />
+    <button onclick="update()">Update</button>
+
+    <h2>Delete</h2>
+    <input type="text" id="apiDeleteId" placeholder="id" required />
+    <button onclick="deleteResource()">Delete</button>
+  </section>
+    <script src="script.js"></script>
+  </body>
+</html>
