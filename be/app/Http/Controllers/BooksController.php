@@ -165,13 +165,10 @@ class BooksController extends Controller
 public function returnBook($bookId)
     {
         try {
-            // Cari buku berdasarkan ID
             $book = Books::findOrFail($bookId);
 
-            // Hapus data peminjaman berdasarkan book_id
             Peminjaman::where('book_id', $bookId)->delete();
 
-            // Ubah status pinjam menjadi false
             $book->update(['pinjam' => false]);
 
             return response()->json(['message' => 'Buku berhasil dikembalikan!'], 200);
