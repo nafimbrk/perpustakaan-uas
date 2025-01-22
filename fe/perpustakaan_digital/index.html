@@ -415,14 +415,15 @@ function viewBook(id) {
     <script>
       const apiPinjamUrl = "http://127.0.0.1:8000/api/pinjam"; // Replace with your actual API URL for pinjam
     
-      // Fungsi untuk menampilkan modal
+      // show modal
       function showModal(bookId) {
-        $("#bookId").val(bookId); // Set ID buku di input hidden
-        $("#modalPinjam").modal("show"); // Tampilkan modal menggunakan jQuery
+        $("#bookId").val(bookId);
+        $("#modalPinjam").modal("show");
       }
-    
+
+      // form submit
       $("#formPinjam").on("submit", function(event) {
-        event.preventDefault(); // Prevent form from submitting normally
+        event.preventDefault();
       
         const bookId = $("#bookId").val();
         const peminjam = $("#peminjam").val();
@@ -447,9 +448,9 @@ function viewBook(id) {
             if (response.success) {
               alert("Buku berhasil dipinjam!");
               $("#modalPinjam").modal("hide");
-              fetchBooks(); // Untuk memperbarui daftar buku
+              fetchBooks();
             } else {
-              alert(response.message); // Jika buku sudah dipinjam
+              alert(response.message);
             }
           },
           error: function(error) {
