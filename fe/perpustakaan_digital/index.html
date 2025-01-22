@@ -208,6 +208,35 @@
 <!-- End Modal Pinjam -->
 
 
+<!-- modal detail pinjam -->
+<div id="modalDetailPeminjam" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title">Detail Peminjam</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <!-- Konten detail akan dimasukkan di sini -->
+              <p id="bookTitle"></p>
+              <p id="peminjamDetail"></p>
+              <p id="kontakDetail"></p>
+              <p id="tanggalPinjamDetail"></p>
+              <p id="tanggalKembaliDetail"></p>
+          </div>
+          <div class="modal-footer">
+              <!-- Tombol untuk mengembalikan buku -->
+              <button id="btnKembalikan" class="btn btn-danger" style="display:none;">Kembalikan Buku</button>
+          </div>
+      </div>
+  </div>
+</div>
+
+
+
+
+
+
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -238,14 +267,19 @@
                     <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${book.id})">Hapus</button>
                     <button 
   id="btnPinjam-${book.id}" 
-  class="btn btn-success btn-sm" 
-  ${book.pinjam ? "disabled" : ""} 
-  onclick="showModal(${book.id})">
+  class="btn ${book.pinjam ? 'btn-warning' : 'btn-success'} btn-sm" 
+  onclick="${book.pinjam ? `showDetails(${book.id})` : `showModal(${book.id})`}">
   ${book.pinjam ? "Sedang Dipinjam" : "Pinjam"}
 </button>
 
-                    <button class="btn btn-warning btn-sm" onclick="updateFavorit(${book.id})">Favorit</button>
-                  </td>
+                  
+
+
+
+<button id="btnFavorit-${book.id}" class="btn ${book.favorit ? 'btn-warning' : 'btn-success'} btn-sm" onclick="updateFavorit(${book.id})">
+  ${book.favorit ? 'Dihapus dari Favorit' : 'Tambah ke Favorit'}
+</button>
+                </td>
                 </tr>
               `);
             });
@@ -423,6 +457,105 @@ function viewBook(id) {
           }
         });
       });
+
+      function showDetails(bookId) {
+        $.ajax({
+            url: `http://127.0.0.1:8000/api/books/details/${bookId}`,
+            method: "GET",
+            success: function (response) {
+                // Periksa apakah data 'book' ada
+                if (response && response.book) {
+                    // Menampilkan data di modal
+                    $('#bookTitle').text(`Buku: ${response.book.judul}`);
+                    $('#peminjamDetail').text(`Peminjam: ${response.peminjam}`);
+                    $('#kontakDetail').text(`Kontak: ${response.kontak}`);
+                    $('#tanggalPinjamDetail').text(`Tanggal Pinjam: ${response.tanggal_pinjam}`);
+                    $('#tanggalKembaliDetail').text(`Tanggal Kembali: ${response.tanggal_kembali}`);
+    
+                    // Menampilkan tombol "Kembalikan Buku" jika buku sedang dipinjam
+                    if (response.book.pinjam) {
+                        // Menampilkan tombol dan menambahkan event handler untuk mengembalikan buku
+                        $('#btnKembalikan')
+                            .show()  // Menampilkan tombol
+                            .attr('onclick', `returnBook(${response.book.id})`); // Menetapkan onclick dengan bookId yang benar
+                    } else {
+                        $('#btnKembalikan').hide(); // Menyembunyikan tombol jika buku tidak dipinjam
+                    }
+    
+                    // Menampilkan modal
+                    $('#modalDetailPeminjam').modal('show');
+                } else {
+                    alert('Data buku tidak ditemukan!');
+                }
+            },
+            error: function (xhr) {
+                console.error(xhr.responseJSON);
+                alert('Terjadi kesalahan: ' + xhr.responseJSON.message);
+            }
+        });
+    }
+    
+
+    function returnBook(bookId) {
+      console.log("Book ID:", bookId);  // Debugging: pastikan bookId terisi
+  
+      // Konfirmasi pengembalian buku
+      if (!confirm('Yakin ingin mengembalikan buku ini?')) return;
+  
+      // Melakukan permintaan ke API Laravel untuk mengembalikan buku
+      $.ajax({
+          url: `http://127.0.0.1:8000/api/books/return/${bookId}`, // Endpoint Laravel
+          type: 'POST', // Gunakan POST sesuai dengan route di Laravel
+          headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function(response) {
+              // Jika berhasil, tampilkan pesan dan perbarui tampilan
+              alert(response.message);
+              location.reload(); // Reload halaman untuk memperbarui data
+          },
+          error: function(xhr) {
+              // Jika terjadi kesalahan, tampilkan pesan error
+              alert('Terjadi kesalahan: ' + xhr.responseJSON.message);
+          }
+      });
+  }
+  
+  
+  function updateFavorit(bookId) {
+    const btn = document.getElementById(`btnFavorit-${bookId}`);
+    const isFavorit = btn.classList.contains('btn-success'); // Cek apakah buku favorit atau tidak
+
+    // Kirim request untuk mengubah status favorit
+    $.ajax({
+        url: `http://127.0.0.1:8000/api/books/favorit/${bookId}`,
+        type: 'POST',
+        data: {
+            favorit: !isFavorit // Membalikkan status favorit
+        },
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // Menambahkan CSRF token untuk keamanan
+        },
+        success: function(response) {
+            // Mengubah status tombol sesuai dengan response favorit
+            if (response.favorit) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-warning');
+                btn.innerText = 'Dihapus dari Favorit';
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+                btn.innerText = 'Tambah ke Favorit';
+            }
+            alert(response.message); // Menampilkan pesan
+        },
+        error: function(xhr) {
+            alert('Terjadi kesalahan: ' + xhr.responseJSON.message); // Menampilkan pesan error
+        }
+    });
+}
+
+  
       
     </script>
     

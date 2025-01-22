@@ -161,22 +161,68 @@ class BooksController extends Controller
     return response()->json(['success' => true]);
 }
 
+public function details($bookId)
+{
+    $peminjaman = Peminjaman::where('book_id', $bookId)->firstOrFail();
+    $book = Books::findOrFail($bookId);
+
+    return response()->json([
+        'book' => $book,
+        'peminjam' => $peminjaman->peminjam,
+        'kontak' => $peminjaman->kontak,
+        'tanggal_pinjam' => $peminjaman->tanggal_pinjam,
+        'tanggal_kembali' => $peminjaman->tanggal_kembali,
+    ]);
+}
+
+
 
 public function returnBook($bookId)
-    {
-        try {
-            // Cari buku berdasarkan ID
-            $book = Books::findOrFail($bookId);
-
-            // Hapus data peminjaman berdasarkan book_id
-            Peminjaman::where('book_id', $bookId)->delete();
-
-            // Ubah status pinjam menjadi false
-            $book->update(['pinjam' => false]);
-
-            return response()->json(['message' => 'Buku berhasil dikembalikan!'], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+{
+    try {
+        // Cari buku berdasarkan ID
+        $book = Books::find($bookId);  // Gunakan find() untuk pengecekan lebih fleksibel
+        if (!$book) {
+            return response()->json(['message' => 'Buku tidak ditemukan'], 404);
         }
+
+        // Hapus data peminjaman berdasarkan book_id
+        Peminjaman::where('book_id', $bookId)->delete();
+
+        // Ubah status pinjam menjadi false
+        $book->update(['pinjam' => false]);
+
+        return response()->json(['message' => 'Buku berhasil dikembalikan!'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
     }
+}
+
+
+public function updateFavorit($bookId, Request $request)
+{
+    try {
+        // Cari buku berdasarkan ID
+        $book = Books::findOrFail($bookId);
+
+        // Ambil status favorit dari request (ini harus boolean)
+        $favoriteStatus = !$book->favorit; // Jika status favorit saat ini false, ganti jadi true, sebaliknya
+
+        // Update status favorit buku
+        $book->favorit = $favoriteStatus;
+
+        // Simpan perubahan ke database
+        $book->save();
+
+        // Mengembalikan response dengan pesan dan status favorit yang baru
+        return response()->json([
+            'message' => $favoriteStatus ? 'Buku berhasil ditambahkan ke favorit' : 'Buku berhasil dihapus dari favorit',
+            'favorit' => $favoriteStatus
+        ], 200);
+    } catch (\Exception $e) {
+        // Menangani error jika terjadi masalah
+        return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+    }
+}
+
 }

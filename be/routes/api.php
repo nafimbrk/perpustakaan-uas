@@ -11,5 +11,7 @@ Route::get('/user', function (Request $request) {
 Route::resource('/books', BooksController::class);
 
 Route::post('/pinjam', [BooksController::class, 'pinjam']);
+Route::get('/books/details/{book}', [BooksController::class, 'details'])->name('books.details');
 Route::post('/books/return/{book}', [BooksController::class, 'returnBook'])->name('books.return');
+Route::post('/books/favorit/{book}', [BooksController::class, 'updateFavorit'])->name('books.updateFavorit');
 
