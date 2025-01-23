@@ -19,12 +19,16 @@
   <body>
     <div class="container mt-4">
       <h1 class="mb-4">Perpustakaan Digital</h1>
-  
+
       <!-- Button to open "Create" Modal -->
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+      <button
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#createModal"
+      >
         Tambah Buku
       </button>
-  
+
       <!-- Table to display books -->
       <table class="table table-bordered mt-4">
         <thead>
@@ -43,20 +47,41 @@
           <!-- Book rows will be appended here -->
         </tbody>
       </table>
-  
+
       <!-- Modal for Create -->
-      <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+      <div
+        class="modal fade"
+        id="createModal"
+        tabindex="-1"
+        aria-labelledby="createModalLabel"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="createModalLabel">Tambah Buku</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               <label for="createJudul">Judul</label>
-              <input type="text" class="form-control" id="createJudul" required>
+              <input
+                type="text"
+                class="form-control"
+                id="createJudul"
+                required
+              />
               <label for="createPengarang" class="mt-2">Pengarang</label>
-              <input type="text" class="form-control" id="createPengarang" required>
+              <input
+                type="text"
+                class="form-control"
+                id="createPengarang"
+                required
+              />
               <label for="createGenre" class="mt-2">Genre</label>
               <select class="form-select" id="createGenre" required>
                 <option value="" disabled selected>Pilih Genre</option>
@@ -65,34 +90,75 @@
                 <option value="Sains">Sains</option>
               </select>
               <label for="createTahunTerbit" class="mt-2">Tahun Terbit</label>
-              <input type="number" class="form-control" id="createTahunTerbit" required>
+              <input
+                type="number"
+                class="form-control"
+                id="createTahunTerbit"
+                required
+              />
               <label for="createPenerbit" class="mt-2">Penerbit</label>
-              <input type="text" class="form-control" id="createPenerbit" required>
-              <label for="createJumlahHalaman" class="mt-2">Jumlah Halaman</label>
-              <input type="number" class="form-control" id="createJumlahHalaman" required>
+              <input
+                type="text"
+                class="form-control"
+                id="createPenerbit"
+                required
+              />
+              <label for="createJumlahHalaman" class="mt-2"
+                >Jumlah Halaman</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="createJumlahHalaman"
+                required
+              />
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-              <button type="button" class="btn btn-primary" onclick="insert()">Simpan</button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Tutup
+              </button>
+              <button type="button" class="btn btn-primary" onclick="insert()">
+                Simpan
+              </button>
             </div>
           </div>
         </div>
       </div>
-  
+
       <!-- Modal for Edit -->
-      <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+      <div
+        class="modal fade"
+        id="editModal"
+        tabindex="-1"
+        aria-labelledby="editModalLabel"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="editModalLabel">Edit Buku</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
-              <input type="hidden" id="editId">
+              <input type="hidden" id="editId" />
               <label for="editJudul">Judul</label>
-              <input type="text" class="form-control" id="editJudul" required>
+              <input type="text" class="form-control" id="editJudul" required />
               <label for="editPengarang" class="mt-2">Pengarang</label>
-              <input type="text" class="form-control" id="editPengarang" required>
+              <input
+                type="text"
+                class="form-control"
+                id="editPengarang"
+                required
+              />
               <label for="editGenre" class="mt-2">Genre</label>
               <select class="form-select" id="editGenre" required>
                 <option value="" disabled selected>Pilih Genre</option>
@@ -101,194 +167,653 @@
                 <option value="Sains">Sains</option>
               </select>
               <label for="editTahunTerbit" class="mt-2">Tahun Terbit</label>
-              <input type="number" class="form-control" id="editTahunTerbit" required>
+              <input
+                type="number"
+                class="form-control"
+                id="editTahunTerbit"
+                required
+              />
               <label for="editPenerbit" class="mt-2">Penerbit</label>
-              <input type="text" class="form-control" id="editPenerbit" required>
+              <input
+                type="text"
+                class="form-control"
+                id="editPenerbit"
+                required
+              />
               <label for="editJumlahHalaman" class="mt-2">Jumlah Halaman</label>
-              <input type="number" class="form-control" id="editJumlahHalaman" required>
+              <input
+                type="number"
+                class="form-control"
+                id="editJumlahHalaman"
+                required
+              />
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-              <button type="button" class="btn btn-primary" onclick="update()">Perbarui</button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Tutup
+              </button>
+              <button type="button" class="btn btn-primary" onclick="update()">
+                Perbarui
+              </button>
             </div>
           </div>
         </div>
       </div>
-  
+
       <!-- Modal for Delete -->
-      <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+      <div
+        class="modal fade"
+        id="deleteModal"
+        tabindex="-1"
+        aria-labelledby="deleteModalLabel"
+        aria-hidden="true"
+      >
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="deleteModalLabel">Hapus Buku</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div class="modal-body">
               <p>Apakah Anda yakin ingin menghapus buku ini?</p>
-              <input type="hidden" id="deleteId">
+              <input type="hidden" id="deleteId" />
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
-              <button type="button" class="btn btn-danger" onclick="deleteBook()">Hapus</button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                onclick="deleteBook()"
+              >
+                Hapus
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  
+
+    <!-- Modal for Detail -->
+    <div
+      class="modal fade"
+      id="detailModal"
+      tabindex="-1"
+      aria-labelledby="detailModalPinjamLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="detailModalLabel">Detail Buku</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Judul:</strong> <span id="detailJudul"></span></p>
+            <p>
+              <strong>Pengarang:</strong> <span id="detailPengarang"></span>
+            </p>
+            <p><strong>Genre:</strong> <span id="detailGenre"></span></p>
+            <p>
+              <strong>Tahun Terbit:</strong>
+              <span id="detailTahunTerbit"></span>
+            </p>
+            <p><strong>Penerbit:</strong> <span id="detailPenerbit"></span></p>
+            <p>
+              <strong>Jumlah Halaman:</strong>
+              <span id="detailJumlahHalaman"></span>
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- modal peminjaman -->
+    <div
+      class="modal fade"
+      id="borrowModal"
+      tabindex="-1"
+      aria-labelledby="borrowModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="borrowModalLabel">Pinjam Buku</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="borrowForm">
+              <div class="mb-3">
+                <label for="borrowerName" class="form-label"
+                  >Nama Peminjam</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="borrowerName"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="borrowDate" class="form-label"
+                  >Tanggal Pinjam</label
+                >
+                <input
+                  type="date"
+                  class="form-control"
+                  id="borrowDate"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="returnDate" class="form-label"
+                  >Tanggal Kembali</label
+                >
+                <input
+                  type="date"
+                  class="form-control"
+                  id="returnDate"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="contact" class="form-label">Kontak</label>
+                <input type="text" class="form-control" id="contact" required />
+              </div>
+              <div class="mb-3">
+                <label for="note" class="form-label">Catatan</label>
+                <textarea class="form-control" id="note"></textarea>
+              </div>
+              <input type="hidden" id="borrowBookId" />
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button type="button" class="btn btn-primary" id="borrowSaveBtn">
+              Pinjam
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Detail Buku dan Peminjaman -->
+<div class="modal fade" id="detailModalPinjam" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailModalLabel">Detail Buku dan Peminjaman</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Detail Buku -->
+        <h6>Detail Buku</h6>
+        <p><strong>Judul:</strong> <span id="detailPinjamJudul"></span></p>
+        <p><strong>Pengarang:</strong> <span id="detailPinjamPengarang"></span></p>
+        <p><strong>Genre:</strong> <span id="detailPinjamGenre"></span></p>
+        <p><strong>Tahun Terbit:</strong> <span id="detailPinjamTahunTerbit"></span></p>
+        <p><strong>Penerbit:</strong> <span id="detailPinjamPenerbit"></span></p>
+        <p><strong>Jumlah Halaman:</strong> <span id="detailPinjamJumlahHalaman"></span></p>
+
+        <!-- Detail Peminjaman -->
+        <h6>Detail Peminjaman</h6>
+        <p><strong>Nama Peminjam:</strong> <span id="detailPeminjam"></span></p>
+        <p><strong>Tanggal Pinjam:</strong> <span id="detailTanggalPinjam"></span></p>
+        <p><strong>Tanggal Kembali:</strong> <span id="detailTanggalKembali"></span></p>
+        <p><strong>Kontak:</strong> <span id="detailKontak"></span></p>
+        <p><strong>Catatan:</strong> <span id="detailCatatan"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  const dbName = "LibraryDB";
-  const storeName = "Books";
+    <script>
+      const dbName = "LibraryDB"; // Nama database
+      const storeName = "Books"; // Nama object store untuk buku
 
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, 1);
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          // Membuka atau membuat database dengan nama 'LibraryDB' dan versi 1
+          const request = indexedDB.open(dbName, 2); // Menambah versi database jika sudah ada sebelumnya
+
+          // Jika versi database dinaikkan (misalnya pertama kali dibuat atau jika ada perubahan pada struktur database)
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            // Membuat object store 'Books' jika belum ada
+            if (!db.objectStoreNames.contains(storeName)) {
+              db.createObjectStore(storeName, {
+                keyPath: "id",
+                autoIncrement: true,
+              });
+            }
+
+            // Membuat object store 'peminjamans' jika belum ada
+            if (!db.objectStoreNames.contains("peminjamans")) {
+              db.createObjectStore("peminjamans", {
+                keyPath: "id",
+                autoIncrement: true,
+              });
+            }
+          };
+
+          // Jika pembukaan database berhasil
+          request.onsuccess = (event) => resolve(event.target.result);
+
+          // Jika pembukaan database gagal
+          request.onerror = (event) => reject(event.target.error);
+        });
+      }
+
+      // Fungsi untuk mengambil data buku
+      async function fetchBooks() {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, "readonly");
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+          const books = request.result;
+          const tableBody = $("#tableBody");
+          tableBody.empty();
+
+          books.forEach((book, index) => {
+            const row = `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${book.judul}</td>
+          <td>${book.pengarang}</td>
+          <td>${book.genre}</td>
+          <td>${book.tahunTerbit}</td>
+          <td>${book.penerbit}</td>
+          <td>${book.jumlahHalaman}</td>
+          <td>
+            <button class="btn btn-info btn-sm detail-btn" data-id="${
+              book.id
+            }">Lihat Detail</button>
+            <button class="btn btn-warning btn-sm edit-btn" data-id="${
+              book.id
+            }">Edit</button>
+            <button class="btn btn-danger btn-sm delete-btn" data-id="${
+              book.id
+            }">Hapus</button>
+            
+            <button class="btn btn-primary" id="borrowButton${book.id}" onclick="handleBorrowButton(${book.id}, ${book.pinjam})">
+              ${book.pinjam ? "Lihat Detail" : "Pinjam"}
+            </button>
+                                  
+          </td>
+        </tr>`;
+            tableBody.append(row);
+          });
+        };
+
+        request.onerror = () => console.error("Error fetching data");
+
+        $(document).on("click", ".detail-btn", function () {
+          const id = $(this).data("id");
+          openDetailModal(id);
+        });
+      }
+
+      // Fungsi untuk menangani klik tombol Pinjam
+      function handleBorrowButton(bookId, pinjamStatus) {
+        console.log("ID Buku:", bookId);
+  console.log("Status Pinjam:", pinjamStatus);
+        if (pinjamStatus) {
+          // Tampilkan modal detail jika buku sudah dipinjam
+          openDetailModalPinjam(bookId);
+        } else {
+          // Tampilkan modal peminjaman jika buku belum dipinjam
+          showBorrowModal(bookId);
         }
-      };
-      request.onsuccess = (event) => resolve(event.target.result);
-      request.onerror = (event) => reject(event.target.error);
-    });
-  }
+      }
 
-  async function fetchBooks() {
-    const db = await openDB();
-    const transaction = db.transaction(storeName, "readonly");
-    const store = transaction.objectStore(storeName);
-    const request = store.getAll();
+      async function insert() {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, "readwrite");
+        const store = transaction.objectStore(storeName);
 
-    request.onsuccess = () => {
-      const books = request.result;
-      const tableBody = $("#tableBody");
-      tableBody.empty();
+        const book = {
+          judul: $("#createJudul").val(),
+          pengarang: $("#createPengarang").val(),
+          genre: $("#createGenre").val(),
+          tahunTerbit: $("#createTahunTerbit").val(),
+          penerbit: $("#createPenerbit").val(),
+          jumlahHalaman: $("#createJumlahHalaman").val(),
+          pinjam: false,
+        };
 
-      books.forEach((book, index) => {
-        const row = `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${book.judul}</td>
-            <td>${book.pengarang}</td>
-            <td>${book.genre}</td>
-            <td>${book.tahunTerbit}</td>
-            <td>${book.penerbit}</td>
-            <td>${book.jumlahHalaman}</td>
-            <td>
-              <button class="btn btn-warning btn-sm edit-btn" data-id="${book.id}">Edit</button>
-              <button class="btn btn-danger btn-sm delete-btn" data-id="${book.id}">Hapus</button>
-            </td>
-          </tr>`;
-        tableBody.append(row);
+        store.put(book).onsuccess = () => {
+          $("#createModal").modal("hide");
+          fetchBooks();
+        };
+        console.log("Memanggil fungsi insert()"); // Debugging
+
+      }
+
+      function openEditModal(id) {
+        openDB().then((db) => {
+          const transaction = db.transaction(storeName, "readonly");
+          const store = transaction.objectStore(storeName);
+          const request = store.get(id);
+
+          request.onsuccess = () => {
+            const book = request.result;
+            $("#editId").val(book.id);
+            $("#editJudul").val(book.judul);
+            $("#editPengarang").val(book.pengarang);
+            $("#editGenre").val(book.genre);
+            $("#editTahunTerbit").val(book.tahunTerbit);
+            $("#editPenerbit").val(book.penerbit);
+            $("#editJumlahHalaman").val(book.jumlahHalaman);
+            $("#editModal").modal("show");
+          };
+        });
+      }
+
+      async function update() {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, "readwrite");
+        const store = transaction.objectStore(storeName);
+
+        const book = {
+          id: parseInt($("#editId").val(), 10),
+          judul: $("#editJudul").val(),
+          pengarang: $("#editPengarang").val(),
+          genre: $("#editGenre").val(),
+          tahunTerbit: $("#editTahunTerbit").val(),
+          penerbit: $("#editPenerbit").val(),
+          jumlahHalaman: $("#editJumlahHalaman").val(),
+        };
+
+        store.put(book).onsuccess = () => {
+          $("#editModal").modal("hide");
+          fetchBooks();
+        };
+      }
+
+      function openDeleteModal(id) {
+        $("#deleteId").val(id);
+        $("#deleteModal").modal("show");
+      }
+
+      async function deleteBook() {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, "readwrite");
+        const store = transaction.objectStore(storeName);
+
+        const id = parseInt($("#deleteId").val(), 10);
+
+        store.delete(id).onsuccess = () => {
+          $("#deleteModal").modal("hide");
+          fetchBooks();
+        };
+      }
+
+      $(document).ready(() => {
+        fetchBooks();
+
+        // Handle click events
+        $(document).on("click", ".edit-btn", function () {
+          const id = $(this).data("id");
+          openEditModal(id);
+        });
+
+        $(document).on("click", ".delete-btn", function () {
+          const id = $(this).data("id");
+          openDeleteModal(id);
+        });
+
+        // Handle form submissions
+        $("#createModal .btn-primary").click(insert);
+        $("#editModal .btn-primary").click(update);
+        $("#deleteModal .btn-danger").click(deleteBook);
       });
+
+      function openDetailModal(id) {
+        openDB().then((db) => {
+          const transaction = db.transaction(storeName, "readonly");
+          const store = transaction.objectStore(storeName);
+          const request = store.get(id);
+
+          request.onsuccess = () => {
+            const book = request.result;
+            $("#detailJudul").text(book.judul);
+            $("#detailPengarang").text(book.pengarang);
+            $("#detailGenre").text(book.genre);
+            $("#detailTahunTerbit").text(book.tahunTerbit);
+            $("#detailPenerbit").text(book.penerbit);
+            $("#detailJumlahHalaman").text(book.jumlahHalaman);
+            $("#detailModal").modal("show");
+          };
+        });
+      }
+
+      // Fungsi untuk menampilkan modal pinjam buku
+      function showBorrowModal(bookId) {
+        console.log(bookId);
+        console.log("ID Buku:", bookId);  // Pastikan ID buku benar
+        console.log("Status Pinjam:", pinjamStatus);  //
+        $("#borrowBookId").val(bookId); // Set ID buku ke dalam modal
+        $("#borrowModal").modal("show"); // Tampilkan modal
+      }
+
+      function borrowBook() {
+        const bookId = parseInt($("#borrowBookId").val(), 10); // Mengonversi ID buku ke integer
+        const borrowerName = $("#borrowerName").val();
+        const borrowDate = $("#borrowDate").val();
+        const returnDate = $("#returnDate").val();
+        const contact = $("#contact").val();
+        const note = $("#note").val();
+
+        const data = {
+          book_id: bookId,
+          peminjaman: borrowerName,
+          tanggal_pinjam: borrowDate,
+          tanggal_kembali: returnDate,
+          kontak: contact,
+          catatan: note,
+        };
+
+        openDB()
+          .then((db) => {
+            const transaction = db.transaction(
+              [storeName, "peminjamans"],
+              "readwrite"
+            );
+            const bookStore = transaction.objectStore(storeName);
+            const peminjamanStore = transaction.objectStore("peminjamans");
+
+            // Mendapatkan data buku berdasarkan ID
+            const bookRequest = bookStore.get(bookId);
+
+            bookRequest.onsuccess = (event) => {
+              const book = event.target.result;
+
+              if (book) {
+                // Periksa apakah buku ditemukan
+                book.pinjam = true; // Set buku sebagai dipinjam
+
+                // Update buku dengan status pinjam
+                bookStore.put(book).onsuccess = () => {
+                  // Tambahkan data peminjaman ke peminjamanStore
+                  peminjamanStore.add(data).onsuccess = () => {
+                    $("#borrowModal").modal("hide");
+                    fetchBooks(); // Refresh tampilan buku
+                  };
+                };
+              } else {
+                console.log("Buku dengan ID " + bookId + " tidak ditemukan.");
+              }
+            };
+
+            bookRequest.onerror = (event) => {
+              console.log(
+                "Terjadi kesalahan saat mengambil buku:",
+                event.target.error
+              );
+            };
+          })
+          .catch((error) => {
+            console.log("Terjadi kesalahan saat membuka database:", error);
+          });
+      }
+
+      // Fungsi untuk mengembalikan buku
+function returnBook(bookId) {
+  openDB().then((db) => {
+    const transaction = db.transaction(
+      ["books", "peminjamans"],
+      "readwrite"
+    );
+    const bookStore = transaction.objectStore("books");
+    const peminjamanStore = transaction.objectStore("peminjamans");
+
+    // Update status buku
+    bookStore.get(bookId).onsuccess = (event) => {
+      const book = event.target.result;
+      if (book) {
+        book.pinjam = false;
+        bookStore.put(book).onsuccess = () => {
+          // Hapus data peminjaman
+          const index = peminjamanStore.index("book_id");
+          const range = IDBKeyRange.only(bookId);
+
+          index.openCursor(range).onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              peminjamanStore.delete(cursor.primaryKey);
+              alert("Buku berhasil dikembalikan!");
+              fetchBooks(); // Perbarui daftar buku
+            } else {
+              alert("Tidak ada data peminjaman untuk buku ini.");
+            }
+          };
+        };
+      } else {
+        alert("Buku tidak ditemukan.");
+      }
     };
-
-    request.onerror = () => console.error("Error fetching data");
-  }
-
-  async function insert() {
-    const db = await openDB();
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    const book = {
-      judul: $("#createJudul").val(),
-      pengarang: $("#createPengarang").val(),
-      genre: $("#createGenre").val(),
-      tahunTerbit: $("#createTahunTerbit").val(),
-      penerbit: $("#createPenerbit").val(),
-      jumlahHalaman: $("#createJumlahHalaman").val(),
-    };
-
-    store.add(book).onsuccess = () => {
-      $("#createModal").modal("hide");
-      fetchBooks();
-    };
-  }
-
-  function openEditModal(id) {
-    openDB().then((db) => {
-      const transaction = db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        const book = request.result;
-        $("#editId").val(book.id);
-        $("#editJudul").val(book.judul);
-        $("#editPengarang").val(book.pengarang);
-        $("#editGenre").val(book.genre);
-        $("#editTahunTerbit").val(book.tahunTerbit);
-        $("#editPenerbit").val(book.penerbit);
-        $("#editJumlahHalaman").val(book.jumlahHalaman);
-        $("#editModal").modal("show");
-      };
-    });
-  }
-
-  async function update() {
-    const db = await openDB();
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    const book = {
-      id: parseInt($("#editId").val(), 10),
-      judul: $("#editJudul").val(),
-      pengarang: $("#editPengarang").val(),
-      genre: $("#editGenre").val(),
-      tahunTerbit: $("#editTahunTerbit").val(),
-      penerbit: $("#editPenerbit").val(),
-      jumlahHalaman: $("#editJumlahHalaman").val(),
-    };
-
-    store.put(book).onsuccess = () => {
-      $("#editModal").modal("hide");
-      fetchBooks();
-    };
-  }
-
-  function openDeleteModal(id) {
-    $("#deleteId").val(id);
-    $("#deleteModal").modal("show");
-  }
-
-  async function deleteBook() {
-    const db = await openDB();
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    const id = parseInt($("#deleteId").val(), 10);
-
-    store.delete(id).onsuccess = () => {
-      $("#deleteModal").modal("hide");
-      fetchBooks();
-    };
-  }
-
-  $(document).ready(() => {
-    fetchBooks();
-
-    // Handle click events
-    $(document).on("click", ".edit-btn", function () {
-      const id = $(this).data("id");
-      openEditModal(id);
-    });
-
-    $(document).on("click", ".delete-btn", function () {
-      const id = $(this).data("id");
-      openDeleteModal(id);
-    });
-
-    // Handle form submissions
-    $("#createModal .btn-primary").click(insert);
-    $("#editModal .btn-primary").click(update);
-    $("#deleteModal .btn-danger").click(deleteBook);
   });
-</script>
+}
+      
 
-  
+      $(document).ready(function () {
+        // Tombol di dalam modal peminjaman
+        $("#borrowSaveBtn").click(function () {
+          borrowBook(); // Panggil fungsi untuk memproses peminjaman
+        });
+      });
+
+      function openDetailModalPinjam(id) {
+        console.log("Membuka detail untuk ID Buku:", id);  // Cek ID yang diterima
+        
+        openDB().then((db) => {
+          const transaction = db.transaction([storeName, "peminjamans"], "readonly");
+          const bookStore = transaction.objectStore(storeName);
+          const peminjamanStore = transaction.objectStore("peminjamans");
+      
+          const bookRequest = bookStore.get(id);
+          const peminjamanRequest = peminjamanStore.get(Number(id));  // Coba tanpa Number()
+      
+          // Ambil detail buku berdasarkan ID
+          bookRequest.onsuccess = () => {
+            const book = bookRequest.result;
+            console.log("Data Buku:", book); // Debug
+            if (book) {
+              $("#detailPinjamJudul").text(book.judul || "-");
+              $("#detailPinjamPengarang").text(book.pengarang || "-");
+              $("#detailPinjamGenre").text(book.genre || "-");
+              $("#detailPinjamTahunTerbit").text(book.tahunTerbit || "-");
+              $("#detailPinjamPenerbit").text(book.penerbit || "-");
+              $("#detailPinjamJumlahHalaman").text(book.jumlahHalaman || "-");
+            }
+          };
+      
+          // Ambil data peminjaman berdasarkan ID
+          peminjamanRequest.onsuccess = () => {
+            const peminjaman = peminjamanRequest.result;
+            console.log("Data Peminjaman (onsuccess):", peminjaman);  // Debug lebih lanjut
+            if (peminjaman) {
+              // Pastikan ini menampilkan nilai yang sesuai
+              $("#detailPeminjam").text(peminjaman.peminjam || "-");
+              $("#detailTanggalPinjam").text(peminjaman.tanggal_pinjam || "-");
+              $("#detailTanggalKembali").text(peminjaman.tanggal_kembali || "-");
+              $("#detailKontak").text(peminjaman.kontak || "-");
+              $("#detailCatatan").text(peminjaman.catatan || "-");
+            } else {
+              console.log("Tidak ada data peminjaman untuk ID buku:", id);  // Jika tidak ada peminjaman
+              $("#detailPeminjam").text("-");
+              $("#detailTanggalPinjam").text("-");
+              $("#detailTanggalKembali").text("-");
+              $("#detailKontak").text("-");
+              $("#detailCatatan").text("-");
+            }
+            $("#detailModalPinjam").modal("show");
+          };
+          
+          
+      
+          bookRequest.onerror = () => {
+            console.error("Gagal mengambil data buku.");
+          };
+          
+          peminjamanRequest.onerror = () => {
+            console.error("Gagal mengambil data peminjaman.");
+          };
+          
+        });
+      }
+      
+      
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
