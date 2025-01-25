@@ -20,10 +20,36 @@
     <div class="container mt-4">
       <h1 class="mb-4">Perpustakaan Digital</h1>
 
+       <form id="search-form">
+        <input type="text" id="search-query" placeholder="Cari buku..." />
+    </form>
+
       <!-- Button to open "Create" Modal -->
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
         Tambah Buku
       </button>
+
+
+      <button id="viewStatistics" class="btn btn-primary">Lihat Statistik</button>
+
+      <div class="mb-3">
+        <label for="filter-genre" class="form-label">Filter Genre</label>
+        <select id="filter-genre" class="form-select">
+            <option value="">Semua Genre</option>
+            <option value="Fiksi">Fiksi</option>
+            <option value="Non-Fiksi">Non-Fiksi</option>
+            <option value="Sains">Sains</option>
+        </select>
+    </div>
+    
+
+    <select id="filter-status" class="form-control">
+      <option value="">Semua</option>
+      <option value="dipinjam">Dipinjam</option>
+      <option value="favorit">Favorit</option>
+      <option value="tersedia">Tersedia</option>
+  </select>
+  
 
       <!-- Table to display books -->
       <table class="table table-bordered mt-4">
@@ -242,53 +268,100 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      const apiUrl = "http://127.0.0.1:8000/api/books"; // Replace with your actual API URL
+      const apiUrl = "http://127.0.0.1:8000/api/books"; // Ganti dengan URL API Anda
 
-      // Fetch all books using jQuery
-      function fetchBooks() {
-        $.ajax({
-          url: apiUrl,
-          method: "GET",
-          success: function(data) {
+// Fungsi untuk fetch buku berdasarkan pencarian, genre, atau status
+function fetchBooks(query = '', genre = '', status = '') {
+    let url = apiUrl;
+
+    // Tambahkan parameter query jika ada
+    if (query) {
+        url += `?query=${query}`;
+    }
+
+    // Tambahkan parameter genre jika ada
+    if (genre) {
+        url += query ? `&genre=${genre}` : `?genre=${genre}`;
+    }
+
+    // Tambahkan parameter status jika ada
+    if (status) {
+        url += (query || genre) ? `&status=${status}` : `?status=${status}`;
+    }
+
+    // Request ke API
+    $.ajax({
+        url: url,
+        method: "GET",
+        success: function (data) {
             const tableBody = $("#apiSelectResult");
-            tableBody.empty();
-            data.data.forEach((book) => {
-              tableBody.append(`
-                <tr>
-                  <td>${book.judul}</td>
-                  <td>${book.pengarang}</td>
-                  <td>${book.genre}</td>
-                  <td>${book.tahun_terbit}</td>
-                  <td>${book.penerbit}</td>
-                  <td>${book.jumlah_halaman}</td>
-                  <td>
-                    <button class="btn btn-info btn-sm" onclick="viewBook(${book.id})">Lihat</button>
-                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${book.id})">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${book.id})">Hapus</button>
-                    <button 
-  id="btnPinjam-${book.id}" 
-  class="btn ${book.pinjam ? 'btn-warning' : 'btn-success'} btn-sm" 
-  onclick="${book.pinjam ? `showDetails(${book.id})` : `showModal(${book.id})`}">
-  ${book.pinjam ? "Sedang Dipinjam" : "Pinjam"}
-</button>
-
-                  
-
-
-
-<button id="btnFavorit-${book.id}" class="btn ${book.favorit ? 'btn-warning' : 'btn-success'} btn-sm" onclick="updateFavorit(${book.id})">
-  ${book.favorit ? 'Dihapus dari Favorit' : 'Tambah ke Favorit'}
-</button>
-                </td>
-                </tr>
-              `);
-            });
-          },
-          error: function(error) {
+            tableBody.empty(); // Bersihkan tabel
+            if (data.data && data.data.length > 0) {
+                data.data.forEach((book) => {
+                    tableBody.append(`
+                        <tr>
+                            <td>${book.judul}</td>
+                            <td>${book.pengarang}</td>
+                            <td>${book.genre}</td>
+                            <td>${book.tahun_terbit}</td>
+                            <td>${book.penerbit}</td>
+                            <td>${book.jumlah_halaman}</td>
+                            <td>
+                                <button class="btn btn-info btn-sm" onclick="viewBook(${book.id})">Lihat</button>
+                                <button class="btn btn-warning btn-sm" onclick="openEditModal(${book.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${book.id})">Hapus</button>
+                                <button 
+                                    id="btnPinjam-${book.id}" 
+                                    class="btn ${book.pinjam ? 'btn-warning' : 'btn-success'} btn-sm" 
+                                    onclick="${book.pinjam ? `showDetails(${book.id})` : `showModal(${book.id})`}">
+                                    ${book.pinjam ? "Sedang Dipinjam" : "Pinjam"}
+                                </button>
+                                <button 
+                                    id="btnFavorit-${book.id}" 
+                                    class="btn ${book.favorit ? 'btn-warning' : 'btn-success'} btn-sm" 
+                                    onclick="updateFavorit(${book.id})">
+                                    ${book.favorit ? 'Dihapus dari Favorit' : 'Tambah ke Favorit'}
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            } else {
+                tableBody.html('<tr><td colspan="7">Tidak ada buku ditemukan.</td></tr>');
+            }
+        },
+        error: function (error) {
             console.error("Error fetching books:", error);
-          }
-        });
-      }
+            $('#apiSelectResult').html('<tr><td colspan="7">Terjadi kesalahan saat mencari buku.</td></tr>');
+        }
+    });
+}
+
+// Event handler untuk input pencarian
+$('#search-query').on('input', function () {
+    const query = $(this).val();
+    const genre = $('#filter-genre').val();
+    const status = $('#filter-status').val();
+    fetchBooks(query, genre, status);
+});
+
+// Event handler untuk filter genre
+$('#filter-genre').on('change', function () {
+    const genre = $(this).val();
+    const query = $('#search-query').val();
+    const status = $('#filter-status').val();
+    fetchBooks(query, genre, status);
+});
+
+// Event handler untuk filter status
+$('#filter-status').on('change', function () {
+    const status = $(this).val();
+    const query = $('#search-query').val();
+    const genre = $('#filter-genre').val();
+    fetchBooks(query, genre, status);
+});
+
+      
 
       // Open Edit Modal with book data
       function openEditModal(id) {
@@ -310,6 +383,7 @@
           }
         });
       }
+      
 
       // Update Book
       $("#updateBtn").on("click", function() {
@@ -557,7 +631,10 @@ function viewBook(id) {
 }
 
   
-      
+      // Navigasi ke halaman statistik
+$(document).on('click', '#viewStatistics', function () {
+  window.location.href = 'statistics.html'; // Ganti dengan path ke halaman statistik
+});
     </script>
     
   </body>

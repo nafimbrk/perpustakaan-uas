@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistik Perpustakaan</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1>Statistik Perpustakaan</h1>
+    <div class="stats mt-4">
+      <p>Total Buku: <span id="totalBooks">0</span></p>
+      <p>Buku Dipinjam: <span id="borrowedBooks">0</span></p>
+      <p>Buku Favorit: <span id="favoriteBooks">0</span></p>
+      <div class="mt-4">
+        <h4>Jumlah Buku per Genre:</h4>
+        <ul id="booksByGenre" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dbName = "Baru"; // Nama database
+    const storeName = "Books"; // Nama object store untuk buku
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        // Membuka database yang sudah ada
+        const request = indexedDB.open(dbName, 2);
+
+        // Jika pembukaan database berhasil
+        request.onsuccess = (event) => resolve(event.target.result);
+
+        // Jika pembukaan database gagal
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+
+    async function fetchStatistics() {
+      try {
+        const db = await openDB(); // Buka database
+        const transaction = db.transaction(storeName, "readonly"); // Transaksi read-only
+        const store = transaction.objectStore(storeName); // Object store
+
+        const request = store.getAll(); // Ambil semua data
+
+        request.onsuccess = () => {
+          const books = request.result; // Data buku dari IndexedDB
+
+          // Hitung Statistik
+          const totalBooks = books.length;
+          const borrowedBooks = books.filter((book) => book.pinjam).length; // Buku yang dipinjam
+          const favoriteBooks = books.filter((book) => book.favorit).length; // Buku favorit
+
+          // Hitung jumlah buku per genre
+          const booksByGenre = books.reduce((acc, book) => {
+            const genre = book.genre || "Tidak Diketahui"; // Gunakan 'Tidak Diketahui' jika genre tidak ada
+            acc[genre] = (acc[genre] || 0) + 1;
+            return acc;
+          }, {});
+
+          // Tampilkan Statistik
+          $("#totalBooks").text(totalBooks);
+          $("#borrowedBooks").text(borrowedBooks);
+          $("#favoriteBooks").text(favoriteBooks);
+
+          // Tampilkan jumlah buku per genre
+          const genreList = $("#booksByGenre");
+          genreList.empty(); // Kosongkan elemen sebelumnya
+          for (const [genre, count] of Object.entries(booksByGenre)) {
+            genreList.append(`<li class="list-group-item">${genre}: ${count} buku</li>`);
+          }
+        };
+
+        request.onerror = () => {
+          console.error("Gagal mengambil data dari database");
+        };
+      } catch (error) {
+        console.error("Error membuka database:", error);
+      }
+    }
+
+    // Panggil Fungsi Statistik Ketika Halaman Dimuat
+    $(document).ready(() => {
+      fetchStatistics();
+    });
+  </script>
+</body>
+</html>

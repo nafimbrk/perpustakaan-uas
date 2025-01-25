@@ -12,16 +12,64 @@ class BooksController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $books = Books::all();
+    public function index(Request $request)
+{
+    try {
+        // Ambil parameter dari request
+        $query = $request->input('query');
+        $genre = $request->input('genre');
+        $status = $request->input('status'); // Tambahkan parameter status
+
+        // Query dasar
+        $booksQuery = Books::query();
+
+        // Filter berdasarkan query
+        if ($query) {
+            $booksQuery->where(function ($q) use ($query) {
+                $q->where('judul', 'LIKE', "%$query%")
+                    ->orWhere('pengarang', 'LIKE', "%$query%")
+                    ->orWhere('genre', 'LIKE', "%$query%")
+                    ->orWhere('tahun_terbit', 'LIKE', "%$query%")
+                    ->orWhere('penerbit', 'LIKE', "%$query%")
+                    ->orWhere('jumlah_halaman', 'LIKE', "%$query%");
+            });
+        }
+
+        // Filter berdasarkan genre
+        if ($genre) {
+            $booksQuery->where('genre', $genre);
+        }
+
+        // Filter berdasarkan status
+        if ($status) {
+            if ($status === 'dipinjam') {
+                $booksQuery->where('pinjam', true); // Buku yang sedang dipinjam
+            } elseif ($status === 'favorit') {
+                $booksQuery->where('favorit', true); // Buku yang difavoritkan
+            } elseif ($status === 'tersedia') {
+                $booksQuery->where('pinjam', false); // Buku yang tersedia
+            }
+        }
+
+        // Ambil hasil
+        $books = $booksQuery->get();
 
         return response()->json([
             'status' => true,
-            'message' => 'data berhasil didapatkan',
+            'message' => 'Data berhasil didapatkan',
             'data' => $books
         ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Terjadi kesalahan',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -223,6 +271,32 @@ public function updateFavorit($bookId, Request $request)
         // Menangani error jika terjadi masalah
         return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
     }
+}
+
+
+public function getStatistics()
+{
+    // Mengambil semua data buku
+    $totalBooks = Books::count();
+
+    // Mengambil jumlah buku yang dipinjam
+    $borrowedBooks = Books::where('pinjam', true)->count();
+
+    // Mengambil jumlah buku yang favorit
+    $favoriteBooks = Books::where('favorit', true)->count();
+
+    // Mengambil jumlah buku berdasarkan genre
+    $booksByGenre = Books::all()
+        ->groupBy('genre')
+        ->map(fn($books) => $books->count());
+
+    // Mengembalikan data statistik sebagai JSON
+    return response()->json([
+        'totalBooks' => $totalBooks,
+        'borrowedBooks' => $borrowedBooks,
+        'favoriteBooks' => $favoriteBooks,
+        'booksByGenre' => $booksByGenre, // Menambahkan statistik berdasarkan genre
+    ]);
 }
 
 }

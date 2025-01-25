@@ -20,6 +20,39 @@
     <div class="container mt-4">
       <h1 class="mb-4">Perpustakaan Digital</h1>
 
+
+      <div class="mb-3">
+        <label for="search-query" class="form-label">Pencarian</label>
+        <input
+          type="text"
+          class="form-control"
+          id="search-query"
+          placeholder="Cari berdasarkan judul, pengarang, genre, dsb."
+        />
+      </div>
+    
+      <!-- Filter genre -->
+      <div class="mb-3">
+        <label for="filter-genre" class="form-label">Filter Genre</label>
+        <select class="form-select" id="filter-genre">
+          <option value="">Semua Genre</option>
+          <option value="Fiksi">Fiksi</option>
+          <option value="Non-Fiksi">Non-Fiksi</option>
+          <option value="Sains">Sains</option>
+        </select>
+      </div>
+    
+      <!-- Filter status -->
+      <div class="mb-3">
+        <label for="filter-status" class="form-label">Filter Status</label>
+        <select class="form-select" id="filter-status">
+          <option value="">Semua Status</option>
+          <option value="tersedia">Tersedia</option>
+          <option value="dipinjam">Dipinjam</option>
+          <option value="favorit">Favorit</option>
+        </select>
+      </div>
+
       <!-- Button to open "Create" Modal -->
       <button
         class="btn btn-primary"
@@ -29,6 +62,12 @@
         Tambah Buku
       </button>
 
+      <button
+  class="btn btn-secondary mt-4"
+  id="statisticsButton"
+>
+  Lihat Statistik
+</button>
       <!-- Table to display books -->
       <table class="table table-bordered mt-4">
         <thead>
@@ -404,6 +443,8 @@
         <p><strong>Catatan:</strong> <span id="detailCatatan"></span></p>
       </div>
       <div class="modal-footer">
+        <!-- Tombol Kembalikan Buku -->
+        <button type="button" class="btn btn-danger" id="btnKembalikanBuku" onclick="returnBook(currentBookId)">Kembalikan Buku</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
@@ -411,114 +452,222 @@
 </div>
 
 
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-      const dbName = "LibraryDB"; // Nama database
-      const storeName = "Books"; // Nama object store untuk buku
+      const dbName = "Baru"; // Nama database
+const storeName = "Books"; // Nama object store untuk buku
+const logStoreName = "SyncQueue"; // Nama object store untuk log sinkronisasi
 
-      function openDB() {
-        return new Promise((resolve, reject) => {
-          // Membuka atau membuat database dengan nama 'LibraryDB' dan versi 1
-          const request = indexedDB.open(dbName, 2); // Menambah versi database jika sudah ada sebelumnya
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 3); // Versi 3 untuk mendukung perubahan baru
 
-          // Jika versi database dinaikkan (misalnya pertama kali dibuat atau jika ada perubahan pada struktur database)
-          request.onupgradeneeded = (event) => {
-            const db = event.target.result;
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
 
-            // Membuat object store 'Books' jika belum ada
-            if (!db.objectStoreNames.contains(storeName)) {
-              db.createObjectStore(storeName, {
-                keyPath: "id",
-                autoIncrement: true,
-              });
-            }
-
-            // Membuat object store 'peminjamans' jika belum ada
-            if (!db.objectStoreNames.contains("peminjamans")) {
-              db.createObjectStore("peminjamans", {
-                keyPath: "id",
-                autoIncrement: true,
-              });
-            }
-          };
-
-          // Jika pembukaan database berhasil
-          request.onsuccess = (event) => resolve(event.target.result);
-
-          // Jika pembukaan database gagal
-          request.onerror = (event) => reject(event.target.error);
-        });
+      // Membuat object store 'Books' jika belum ada
+      if (!db.objectStoreNames.contains(storeName)) {
+        const booksStore = db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+        // Hapus indeks genre dan status jika tidak diperlukan
       }
 
-      // Fungsi untuk mengambil data buku
-      async function fetchBooks() {
+      // Membuat object store 'SyncQueue' untuk log sinkronisasi jika belum ada
+      if (!db.objectStoreNames.contains(logStoreName)) {
+        const logStore = db.createObjectStore(logStoreName, { keyPath: "id", autoIncrement: true });
+        logStore.createIndex("operation", "operation", { unique: false });
+        logStore.createIndex("timestamp", "timestamp", { unique: false });
+      }
+
+      // Membuat object store 'Peminjaman' jika belum ada
+      if (!db.objectStoreNames.contains("peminjamans")) {
+        const peminjamanStore = db.createObjectStore("peminjamans", { keyPath: "id", autoIncrement: true });
+        peminjamanStore.createIndex("book_id", "book_id", { unique: false }); // Hanya book_id yang dibutuhkan
+      }
+    };
+
+    request.onsuccess = (event) => resolve(event.target.result);
+
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+
+
+      
+      // Fungsi untuk mengembalikan buku
+      function returnBook(bookId) {
+        openDB().then((db) => {
+          console.log("Daftar Object Store setelah DB dibuka:", db.objectStoreNames); // Debugging daftar object store setelah DB dibuka
+      
+          const transaction = db.transaction(["Books", "peminjamans"], "readwrite");
+          const bookStore = transaction.objectStore("Books");
+          const peminjamanStore = transaction.objectStore("peminjamans");
+      
+          // Update status buku
+          bookStore.get(bookId).onsuccess = (event) => {
+            const book = event.target.result;
+            if (book) {
+              book.pinjam = false; // Mengubah status pinjam menjadi false
+              bookStore.put(book).onsuccess = () => {
+                console.log("Status buku berhasil diperbarui");
+      
+                // Hapus data peminjaman
+                const index = peminjamanStore.index("book_id");
+                const range = IDBKeyRange.only(bookId);
+      
+                index.openCursor(range).onsuccess = (e) => {
+                  const cursor = e.target.result;
+                  if (cursor) {
+                    peminjamanStore.delete(cursor.primaryKey); // Menghapus data peminjaman
+                    $("#detailModalPinjam").modal("hide");
+          fetchBooks();
+                  } else {
+                    alert("Tidak ada data peminjaman untuk buku ini.");
+                  }
+                };
+              };
+            } else {
+              alert("Buku tidak ditemukan.");
+            }
+          };
+        }).catch((error) => {
+          console.error("Error membuka database:", error);
+        });
+      }
+      
+
+
+
+      async function fetchBooks(query = '', genreFilter = '', statusFilter = '') {
         const db = await openDB();
         const transaction = db.transaction(storeName, "readonly");
         const store = transaction.objectStore(storeName);
         const request = store.getAll();
-
+      
         request.onsuccess = () => {
           const books = request.result;
+          console.log("Data buku:", books); // Debug data dari IndexedDB
           const tableBody = $("#tableBody");
           tableBody.empty();
-
-          books.forEach((book, index) => {
+      
+          // Filter buku berdasarkan query pencarian, genre, dan status
+          const filteredBooks = books.filter((book) => {
+            const matchesQuery = query
+              ? book.judul.toLowerCase().includes(query.toLowerCase()) ||
+                book.pengarang.toLowerCase().includes(query.toLowerCase()) ||
+                book.genre.toLowerCase().includes(query.toLowerCase()) ||
+                book.tahunTerbit.toLowerCase().includes(query.toLowerCase()) ||
+                book.penerbit.toLowerCase().includes(query.toLowerCase()) ||
+                book.jumlahHalaman.toString().includes(query.toLowerCase())
+              : true;
+      
+            const matchesGenre = genreFilter
+              ? book.genre.toLowerCase() === genreFilter.toLowerCase()
+              : true;
+      
+            let matchesStatus = true;
+            if (statusFilter) {
+              if (statusFilter.toLowerCase() === "tersedia") {
+                matchesStatus = !book.pinjam;
+              } else if (statusFilter.toLowerCase() === "dipinjam") {
+                matchesStatus = book.pinjam;
+              } else if (statusFilter.toLowerCase() === "favorit") {
+                matchesStatus = book.favorit;
+              }
+            }
+      
+            return matchesQuery && matchesGenre && matchesStatus;
+          });
+      
+          console.log("Filtered Books:", filteredBooks); // Debug data setelah filter
+      
+          // Tampilkan buku yang sudah difilter
+          filteredBooks.forEach((book, index) => {
             const row = `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${book.judul}</td>
-          <td>${book.pengarang}</td>
-          <td>${book.genre}</td>
-          <td>${book.tahunTerbit}</td>
-          <td>${book.penerbit}</td>
-          <td>${book.jumlahHalaman}</td>
-          <td>
-            <button class="btn btn-info btn-sm detail-btn" data-id="${
-              book.id
-            }">Lihat Detail</button>
-            <button class="btn btn-warning btn-sm edit-btn" data-id="${
-              book.id
-            }">Edit</button>
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${
-              book.id
-            }">Hapus</button>
-            
-            <button class="btn btn-primary" id="borrowButton${book.id}" onclick="handleBorrowButton(${book.id}, ${book.pinjam})">
-              ${book.pinjam ? "Lihat Detail" : "Pinjam"}
-            </button>
-                                  
-          </td>
-        </tr>`;
+              <tr>
+                <td>${index + 1}</td>
+                <td>${book.judul}</td>
+                <td>${book.pengarang}</td>
+                <td>${book.genre}</td>
+                <td>${book.tahunTerbit}</td>
+                <td>${book.penerbit}</td>
+                <td>${book.jumlahHalaman}</td>
+                <td>
+                  <button class="btn btn-info btn-sm detail-btn" data-id="${book.id}">Lihat Detail</button>
+                  <button class="btn btn-warning btn-sm edit-btn" data-id="${book.id}">Edit</button>
+                  <button class="btn btn-danger btn-sm delete-btn" data-id="${book.id}">Hapus</button>
+                  <button class="btn btn-primary" id="borrowButton${book.id}" onclick="handleBorrowButton(${book.id}, ${book.pinjam})">
+                    ${book.pinjam ? "Lihat Detail" : "Pinjam"}
+                  </button>
+                  <button class="favorit-btn btn btn-warning" data-id="${book.id}">
+                    ${book.favorit ? "Ditambahkan ke Favorit" : "Favorit"}
+                  </button>
+                </td>
+              </tr>`;
             tableBody.append(row);
           });
         };
-
+      
         request.onerror = () => console.error("Error fetching data");
-
-        $(document).on("click", ".detail-btn", function () {
-          const id = $(this).data("id");
-          openDetailModal(id);
-        });
       }
+      
 
-      // Fungsi untuk menangani klik tombol Pinjam
+// Panggil fetchBooks saat halaman pertama kali dimuat
+$(document).ready(() => {
+  fetchBooks();
+});
+
+// Event listener untuk input pencarian
+$('#search-query').on('input', function () {
+  const query = $(this).val();
+  const genre = $('#filter-genre').val();
+  const status = $('#filter-status').val();
+  fetchBooks(query, genre, status);
+});
+
+// Event listener untuk filter genre
+$('#filter-genre').on('change', function () {
+  const genre = $(this).val();
+  const query = $('#search-query').val();
+  const status = $('#filter-status').val();
+  fetchBooks(query, genre, status);
+});
+
+// Event listener untuk filter status
+$('#filter-status').on('change', function () {
+  const status = $(this).val();
+  const query = $('#search-query').val();
+  const genre = $('#filter-genre').val();
+  fetchBooks(query, genre, status);
+});
+
+
+
+
+
+       
+
       function handleBorrowButton(bookId, pinjamStatus) {
         console.log("ID Buku:", bookId);
-  console.log("Status Pinjam:", pinjamStatus);
+        console.log("Status Pinjam:", pinjamStatus);
         if (pinjamStatus) {
-          // Tampilkan modal detail jika buku sudah dipinjam
           openDetailModalPinjam(bookId);
         } else {
-          // Tampilkan modal peminjaman jika buku belum dipinjam
-          showBorrowModal(bookId);
+          showBorrowModal(bookId, pinjamStatus); // Kirim pinjamStatus
         }
       }
+      
 
       async function insert() {
         const db = await openDB();
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-
+        
+        // Memulai transaksi untuk store 'Books' dan 'SyncQueue'
+        const transaction = db.transaction([storeName, "SyncQueue"], "readwrite");
+        const booksStore = transaction.objectStore(storeName);
+        const logStore = transaction.objectStore("SyncQueue");
+      
+        // Data buku yang akan ditambahkan
         const book = {
           judul: $("#createJudul").val(),
           pengarang: $("#createPengarang").val(),
@@ -527,15 +676,47 @@
           penerbit: $("#createPenerbit").val(),
           jumlahHalaman: $("#createJumlahHalaman").val(),
           pinjam: false,
+          favorit: false,
         };
-
-        store.put(book).onsuccess = () => {
-          $("#createModal").modal("hide");
-          fetchBooks();
+      
+        // Menambahkan buku ke object store 'Books'
+        const bookRequest = booksStore.put(book);
+      
+        bookRequest.onsuccess = (event) => {
+          const bookId = event.target.result; // Mendapatkan ID dari buku yang baru ditambahkan
+          console.log("Buku berhasil ditambahkan dengan ID:", bookId);
+      
+          // Membuat log untuk sinkronisasi
+          const log = {
+            operation: "insert",
+            table: storeName,
+            recordId: bookId, // ID buku yang baru ditambahkan
+            data: book,
+            timestamp: new Date().toISOString(),
+            synced: false, // Data belum tersinkron ke server
+          };
+      
+          // Menambahkan log ke object store 'SyncQueue'
+          const logRequest = logStore.add(log);
+      
+          logRequest.onsuccess = () => {
+            console.log("Log sinkronisasi berhasil ditambahkan:", log);
+            $("#createModal").modal("hide"); // Menutup modal setelah sukses
+            fetchBooks(); // Memperbarui tampilan tabel
+          };
+      
+          logRequest.onerror = () => {
+            console.error("Gagal menambahkan log sinkronisasi.");
+          };
         };
+      
+        bookRequest.onerror = () => {
+          console.error("Gagal menambahkan buku.");
+        };
+      
         console.log("Memanggil fungsi insert()"); // Debugging
-
       }
+      
 
       function openEditModal(id) {
         openDB().then((db) => {
@@ -609,11 +790,6 @@
           const id = $(this).data("id");
           openDeleteModal(id);
         });
-
-        // Handle form submissions
-        $("#createModal .btn-primary").click(insert);
-        $("#editModal .btn-primary").click(update);
-        $("#deleteModal .btn-danger").click(deleteBook);
       });
 
       function openDetailModal(id) {
@@ -635,14 +811,14 @@
         });
       }
 
-      // Fungsi untuk menampilkan modal pinjam buku
-      function showBorrowModal(bookId) {
-        console.log(bookId);
-        console.log("ID Buku:", bookId);  // Pastikan ID buku benar
-        console.log("Status Pinjam:", pinjamStatus);  //
+      function showBorrowModal(bookId, pinjamStatus) {
+        console.log("ID Buku:", bookId);  // Debugging
+        console.log("Status Pinjam:", pinjamStatus); // Kini tidak akan error
         $("#borrowBookId").val(bookId); // Set ID buku ke dalam modal
         $("#borrowModal").modal("show"); // Tampilkan modal
       }
+      
+      
 
       function borrowBook() {
         const bookId = parseInt($("#borrowBookId").val(), 10); // Mengonversi ID buku ke integer
@@ -651,35 +827,32 @@
         const returnDate = $("#returnDate").val();
         const contact = $("#contact").val();
         const note = $("#note").val();
-
+      
         const data = {
           book_id: bookId,
-          peminjaman: borrowerName,
+          peminjam: borrowerName,
           tanggal_pinjam: borrowDate,
           tanggal_kembali: returnDate,
           kontak: contact,
           catatan: note,
         };
-
+      
         openDB()
           .then((db) => {
-            const transaction = db.transaction(
-              [storeName, "peminjamans"],
-              "readwrite"
-            );
+            const transaction = db.transaction([storeName, "peminjamans"], "readwrite");
             const bookStore = transaction.objectStore(storeName);
             const peminjamanStore = transaction.objectStore("peminjamans");
-
+      
             // Mendapatkan data buku berdasarkan ID
             const bookRequest = bookStore.get(bookId);
-
+      
             bookRequest.onsuccess = (event) => {
               const book = event.target.result;
-
+      
               if (book) {
                 // Periksa apakah buku ditemukan
                 book.pinjam = true; // Set buku sebagai dipinjam
-
+      
                 // Update buku dengan status pinjam
                 bookStore.put(book).onsuccess = () => {
                   // Tambahkan data peminjaman ke peminjamanStore
@@ -692,7 +865,7 @@
                 console.log("Buku dengan ID " + bookId + " tidak ditemukan.");
               }
             };
-
+      
             bookRequest.onerror = (event) => {
               console.log(
                 "Terjadi kesalahan saat mengambil buku:",
@@ -703,46 +876,100 @@
           .catch((error) => {
             console.log("Terjadi kesalahan saat membuka database:", error);
           });
-      }
+      }      
 
-      // Fungsi untuk mengembalikan buku
-function returnBook(bookId) {
+      
+let currentBookId;  // Variabel global untuk menyimpan ID buku yang sedang dibuka
+function openDetailModalPinjam(id) {
+  console.log("Membuka detail untuk ID Buku:", id);  // Cek ID yang diterima
+  currentBookId = id;  // Menyimpan ID buku
+
   openDB().then((db) => {
-    const transaction = db.transaction(
-      ["books", "peminjamans"],
-      "readwrite"
-    );
-    const bookStore = transaction.objectStore("books");
+    const transaction = db.transaction([storeName, "peminjamans"], "readonly");
+    const bookStore = transaction.objectStore(storeName);
     const peminjamanStore = transaction.objectStore("peminjamans");
 
-    // Update status buku
-    bookStore.get(bookId).onsuccess = (event) => {
-      const book = event.target.result;
-      if (book) {
-        book.pinjam = false;
-        bookStore.put(book).onsuccess = () => {
-          // Hapus data peminjaman
-          const index = peminjamanStore.index("book_id");
-          const range = IDBKeyRange.only(bookId);
+    const bookRequest = bookStore.get(id);
 
-          index.openCursor(range).onsuccess = (e) => {
-            const cursor = e.target.result;
-            if (cursor) {
-              peminjamanStore.delete(cursor.primaryKey);
-              alert("Buku berhasil dikembalikan!");
-              fetchBooks(); // Perbarui daftar buku
-            } else {
-              alert("Tidak ada data peminjaman untuk buku ini.");
-            }
-          };
+    // Ambil detail buku berdasarkan ID
+    bookRequest.onsuccess = () => {
+      const book = bookRequest.result;
+      console.log("Data Buku:", book); // Debug
+      if (book) {
+        $("#detailPinjamJudul").text(book.judul || "-");
+        $("#detailPinjamPengarang").text(book.pengarang || "-");
+        $("#detailPinjamGenre").text(book.genre || "-");
+        $("#detailPinjamTahunTerbit").text(book.tahunTerbit || "-");
+        $("#detailPinjamPenerbit").text(book.penerbit || "-");
+        $("#detailPinjamJumlahHalaman").text(book.jumlahHalaman || "-");
+
+        // Ambil data peminjaman berdasarkan ID setelah buku berhasil diambil
+        const peminjamanRequest = peminjamanStore.index("book_id").get(id);
+        peminjamanRequest.onsuccess = () => {
+          const peminjaman = peminjamanRequest.result;
+          console.log("Data Peminjaman (onsuccess):", peminjaman);  // Debug lebih lanjut
+          if (peminjaman) {
+            $("#detailPeminjam").text(peminjaman.peminjam || "-");
+            $("#detailTanggalPinjam").text(peminjaman.tanggal_pinjam || "-");
+            $("#detailTanggalKembali").text(peminjaman.tanggal_kembali || "-");
+            $("#detailKontak").text(peminjaman.kontak || "-");
+            $("#detailCatatan").text(peminjaman.catatan || "-");
+          } else {
+            console.log("Tidak ada data peminjaman untuk ID buku:", id);  // Jika tidak ada peminjaman
+            $("#detailPeminjam").text("-");
+            $("#detailTanggalPinjam").text("-");
+            $("#detailTanggalKembali").text("-");
+            $("#detailKontak").text("-");
+            $("#detailCatatan").text("-");
+          }
+          $("#detailModalPinjam").modal("show");
+        };
+
+        peminjamanRequest.onerror = () => {
+          console.error("Gagal mengambil data peminjaman.");
         };
       } else {
-        alert("Buku tidak ditemukan.");
+        console.log("Buku dengan ID " + id + " tidak ditemukan.");
       }
     };
+
+    bookRequest.onerror = () => {
+      console.error("Gagal mengambil data buku.");
+    };
+  }).catch((error) => {
+    console.error("Terjadi kesalahan saat membuka database:", error);
   });
 }
-      
+
+
+async function favoritBook(id) {
+  const db = await openDB(); // Buka database
+  const transaction = db.transaction(storeName, "readwrite");
+  const store = transaction.objectStore(storeName);
+  const request = store.get(id);
+
+  request.onsuccess = () => {
+    const book = request.result;
+
+    // Toggle status favorit
+    book.favorit = !book.favorit;
+
+    // Update database
+    const updateRequest = store.put(book);
+    updateRequest.onsuccess = () => {
+      console.log("Status favorit berhasil diperbarui.");
+      fetchBooks(); // Perbarui tampilan tabel
+    };
+    updateRequest.onerror = () => {
+      console.error("Gagal memperbarui status favorit.");
+    };
+  };
+
+  request.onerror = () => {
+    console.error("Gagal mengambil data buku.");
+  };
+}
+
 
       $(document).ready(function () {
         // Tombol di dalam modal peminjaman
@@ -751,66 +978,21 @@ function returnBook(bookId) {
         });
       });
 
-      function openDetailModalPinjam(id) {
-        console.log("Membuka detail untuk ID Buku:", id);  // Cek ID yang diterima
-        
-        openDB().then((db) => {
-          const transaction = db.transaction([storeName, "peminjamans"], "readonly");
-          const bookStore = transaction.objectStore(storeName);
-          const peminjamanStore = transaction.objectStore("peminjamans");
-      
-          const bookRequest = bookStore.get(id);
-          const peminjamanRequest = peminjamanStore.get(Number(id));  // Coba tanpa Number()
-      
-          // Ambil detail buku berdasarkan ID
-          bookRequest.onsuccess = () => {
-            const book = bookRequest.result;
-            console.log("Data Buku:", book); // Debug
-            if (book) {
-              $("#detailPinjamJudul").text(book.judul || "-");
-              $("#detailPinjamPengarang").text(book.pengarang || "-");
-              $("#detailPinjamGenre").text(book.genre || "-");
-              $("#detailPinjamTahunTerbit").text(book.tahunTerbit || "-");
-              $("#detailPinjamPenerbit").text(book.penerbit || "-");
-              $("#detailPinjamJumlahHalaman").text(book.jumlahHalaman || "-");
-            }
-          };
-      
-          // Ambil data peminjaman berdasarkan ID
-          peminjamanRequest.onsuccess = () => {
-            const peminjaman = peminjamanRequest.result;
-            console.log("Data Peminjaman (onsuccess):", peminjaman);  // Debug lebih lanjut
-            if (peminjaman) {
-              // Pastikan ini menampilkan nilai yang sesuai
-              $("#detailPeminjam").text(peminjaman.peminjam || "-");
-              $("#detailTanggalPinjam").text(peminjaman.tanggal_pinjam || "-");
-              $("#detailTanggalKembali").text(peminjaman.tanggal_kembali || "-");
-              $("#detailKontak").text(peminjaman.kontak || "-");
-              $("#detailCatatan").text(peminjaman.catatan || "-");
-            } else {
-              console.log("Tidak ada data peminjaman untuk ID buku:", id);  // Jika tidak ada peminjaman
-              $("#detailPeminjam").text("-");
-              $("#detailTanggalPinjam").text("-");
-              $("#detailTanggalKembali").text("-");
-              $("#detailKontak").text("-");
-              $("#detailCatatan").text("-");
-            }
-            $("#detailModalPinjam").modal("show");
-          };
-          
-          
-      
-          bookRequest.onerror = () => {
-            console.error("Gagal mengambil data buku.");
-          };
-          
-          peminjamanRequest.onerror = () => {
-            console.error("Gagal mengambil data peminjaman.");
-          };
-          
-        });
-      }
-      
+      $(document).on("click", ".favorit-btn", function () {
+        const id = $(this).data("id");
+        favoritBook(id); // Panggil fungsi untuk mengelola status favorit
+      });
+
+      // Navigasi ke Halaman Statistik
+$("#statisticsButton").on("click", function () {
+  window.location.href = "statistics2.html"; // Mengarahkan ke halaman statistik
+});
+
+$(document).on("click", ".detail-btn", function () {
+  const id = $(this).data("id"); // Ambil data-id dari tombol
+  openEditModal(id); // Panggil fungsi untuk membuka modal
+});
+
       
     </script>
 

@@ -8,6 +8,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::get('/books/statistics', [BooksController::class, 'getStatistics']);
+
 Route::resource('/books', BooksController::class);
 
 Route::post('/pinjam', [BooksController::class, 'pinjam']);
