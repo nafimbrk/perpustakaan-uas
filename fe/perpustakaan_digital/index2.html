@@ -452,10 +452,12 @@
 </div>
 
 
+<button id="syncLogsBtn">Sinkronkan Log</button>
+
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-      const dbName = "Baru"; // Nama database
+const dbName = "Baru"; // Nama database
 const storeName = "Books"; // Nama object store untuk buku
 const logStoreName = "SyncQueue"; // Nama object store untuk log sinkronisasi
 
@@ -495,46 +497,78 @@ function openDB() {
 
 
       
-      // Fungsi untuk mengembalikan buku
-      function returnBook(bookId) {
-        openDB().then((db) => {
-          console.log("Daftar Object Store setelah DB dibuka:", db.objectStoreNames); // Debugging daftar object store setelah DB dibuka
-      
-          const transaction = db.transaction(["Books", "peminjamans"], "readwrite");
-          const bookStore = transaction.objectStore("Books");
-          const peminjamanStore = transaction.objectStore("peminjamans");
-      
-          // Update status buku
-          bookStore.get(bookId).onsuccess = (event) => {
-            const book = event.target.result;
-            if (book) {
-              book.pinjam = false; // Mengubah status pinjam menjadi false
-              bookStore.put(book).onsuccess = () => {
-                console.log("Status buku berhasil diperbarui");
-      
-                // Hapus data peminjaman
-                const index = peminjamanStore.index("book_id");
-                const range = IDBKeyRange.only(bookId);
-      
-                index.openCursor(range).onsuccess = (e) => {
-                  const cursor = e.target.result;
-                  if (cursor) {
-                    peminjamanStore.delete(cursor.primaryKey); // Menghapus data peminjaman
-                    $("#detailModalPinjam").modal("hide");
-          fetchBooks();
-                  } else {
-                    alert("Tidak ada data peminjaman untuk buku ini.");
-                  }
+function returnBook(bookId) {
+  openDB().then((db) => {
+    console.log("Daftar Object Store setelah DB dibuka:", db.objectStoreNames); // Debugging daftar object store setelah DB dibuka
+
+    const transaction = db.transaction(["Books", "peminjamans", "SyncQueue"], "readwrite");
+    const bookStore = transaction.objectStore("Books");
+    const peminjamanStore = transaction.objectStore("peminjamans");
+    const logStore = transaction.objectStore("SyncQueue"); // Object store untuk log
+
+    // Update status buku
+    bookStore.get(bookId).onsuccess = (event) => {
+      const book = event.target.result;
+      if (book) {
+        const originalBook = { ...book }; // Salin data buku sebelum perubahan
+        book.pinjam = false; // Mengubah status pinjam menjadi false
+        bookStore.put(book).onsuccess = () => {
+          // Log untuk mengupdate status pinjam
+          const updateLog = {
+            operation: "update",
+            table: "Books", // Nama tabel untuk buku
+            recordId: bookId, // ID buku yang diubah
+            changes: {
+              before: originalBook, // Data sebelum perubahan
+              after: book, // Data setelah perubahan
+            },
+            timestamp: new Date().toISOString(),
+            synced: false, // Data belum tersinkronisasi
+          };
+
+          logStore.add(updateLog).onsuccess = () => {
+            console.log("Log update status pinjam berhasil ditambahkan:", updateLog);
+          };
+
+          // Hapus data peminjaman
+          const index = peminjamanStore.index("book_id");
+          const range = IDBKeyRange.only(bookId);
+
+          index.openCursor(range).onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              const peminjamanId = cursor.primaryKey;
+              peminjamanStore.delete(peminjamanId).onsuccess = () => {
+                // Log untuk menghapus data peminjaman
+                const deleteLog = {
+                  operation: "delete",
+                  table: "peminjamans", // Nama tabel peminjaman
+                  recordId: peminjamanId, // ID peminjaman yang dihapus
+                  timestamp: new Date().toISOString(),
+                  synced: false, // Data belum tersinkronisasi
                 };
+
+                logStore.add(deleteLog).onsuccess = () => {
+                  console.log("Log delete data peminjaman berhasil ditambahkan:", deleteLog);
+                };
+
+                $("#detailModalPinjam").modal("hide");
+                fetchBooks(); // Refresh tampilan buku
               };
             } else {
-              alert("Buku tidak ditemukan.");
+              alert("Tidak ada data peminjaman untuk buku ini.");
             }
           };
-        }).catch((error) => {
-          console.error("Error membuka database:", error);
-        });
+        };
+      } else {
+        alert("Buku tidak ditemukan.");
       }
+    };
+  }).catch((error) => {
+    console.error("Error membuka database:", error);
+  });
+}
+
       
 
 
@@ -740,11 +774,28 @@ $('#filter-status').on('change', function () {
 
       async function update() {
         const db = await openDB();
-        const transaction = db.transaction(storeName, "readwrite");
+        const transaction = db.transaction([storeName, logStoreName], "readwrite");
         const store = transaction.objectStore(storeName);
-
-        const book = {
-          id: parseInt($("#editId").val(), 10),
+        const logStore = transaction.objectStore(logStoreName);
+      
+        // Ambil data buku sebelum diubah
+        const bookId = parseInt($("#editId").val(), 10);
+        let originalBook;
+      
+        try {
+          originalBook = await new Promise((resolve, reject) => {
+            const request = store.get(bookId);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+        } catch (error) {
+          console.error("Gagal mengambil data buku sebelum update:", error);
+          return;
+        }
+      
+        // Data buku yang akan diperbarui
+        const updatedBook = {
+          id: bookId,
           judul: $("#editJudul").val(),
           pengarang: $("#editPengarang").val(),
           genre: $("#editGenre").val(),
@@ -752,12 +803,43 @@ $('#filter-status').on('change', function () {
           penerbit: $("#editPenerbit").val(),
           jumlahHalaman: $("#editJumlahHalaman").val(),
         };
-
-        store.put(book).onsuccess = () => {
+      
+        // Update data buku di object store 'Books'
+        try {
+          await new Promise((resolve, reject) => {
+            const request = store.put(updatedBook);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(request.error);
+          });
+      
+          // Tambahkan log perubahan ke object store 'SyncQueue'
+          const log = {
+            operation: "update",
+            book_id: updatedBook.id,
+            changes: {
+              before: originalBook || {}, // Data sebelum update
+              after: updatedBook,         // Data setelah update
+            },
+            timestamp: new Date().toISOString(), // Waktu perubahan
+          };
+      
+          await new Promise((resolve, reject) => {
+            const request = logStore.add(log);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(request.error);
+          });
+      
+          console.log("Log update berhasil disimpan:", log);
+      
+          // Tutup modal dan refresh data buku
           $("#editModal").modal("hide");
           fetchBooks();
-        };
+        } catch (error) {
+          console.error("Gagal mengupdate data buku:", error);
+        }
       }
+      
+      
 
       function openDeleteModal(id) {
         $("#deleteId").val(id);
@@ -766,16 +848,59 @@ $('#filter-status').on('change', function () {
 
       async function deleteBook() {
         const db = await openDB();
-        const transaction = db.transaction(storeName, "readwrite");
+        const transaction = db.transaction([storeName, logStoreName], "readwrite");
         const store = transaction.objectStore(storeName);
-
+        const logStore = transaction.objectStore(logStoreName);
+      
         const id = parseInt($("#deleteId").val(), 10);
-
-        store.delete(id).onsuccess = () => {
+      
+        // Ambil data buku sebelum dihapus
+        let bookToDelete;
+      
+        try {
+          bookToDelete = await new Promise((resolve, reject) => {
+            const request = store.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+      
+          if (!bookToDelete) {
+            console.error("Buku dengan ID tersebut tidak ditemukan.");
+            $("#deleteModal").modal("hide");
+            return;
+          }
+      
+          // Hapus data buku
+          await new Promise((resolve, reject) => {
+            const request = store.delete(id);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(request.error);
+          });
+      
+          // Tambahkan log penghapusan ke SyncQueue
+          const log = {
+            operation: "delete",
+            book_id: id,
+            data: bookToDelete, // Data buku yang dihapus
+            timestamp: new Date().toISOString(), // Waktu penghapusan
+          };
+      
+          await new Promise((resolve, reject) => {
+            const request = logStore.add(log);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(request.error);
+          });
+      
+          console.log("Log penghapusan berhasil disimpan:", log);
+      
+          // Tutup modal dan refresh daftar buku
           $("#deleteModal").modal("hide");
           fetchBooks();
-        };
+        } catch (error) {
+          console.error("Gagal menghapus buku:", error);
+        }
       }
+      
 
       $(document).ready(() => {
         fetchBooks();
@@ -839,10 +964,11 @@ $('#filter-status').on('change', function () {
       
         openDB()
           .then((db) => {
-            const transaction = db.transaction([storeName, "peminjamans"], "readwrite");
+            const transaction = db.transaction([storeName, "peminjamans", "SyncQueue"], "readwrite");
             const bookStore = transaction.objectStore(storeName);
             const peminjamanStore = transaction.objectStore("peminjamans");
-      
+            const logStore = transaction.objectStore("SyncQueue"); // Object store untuk log
+            
             // Mendapatkan data buku berdasarkan ID
             const bookRequest = bookStore.get(bookId);
       
@@ -851,12 +977,44 @@ $('#filter-status').on('change', function () {
       
               if (book) {
                 // Periksa apakah buku ditemukan
+                const originalBook = { ...book }; // Salin data buku sebelum perubahan
                 book.pinjam = true; // Set buku sebagai dipinjam
       
                 // Update buku dengan status pinjam
                 bookStore.put(book).onsuccess = () => {
+                  // Log untuk mengupdate status pinjam
+                  const updateLog = {
+                    operation: "update",
+                    table: storeName, // Nama tabel untuk buku
+                    recordId: bookId, // ID buku yang diubah
+                    changes: {
+                      before: originalBook, // Data sebelum perubahan
+                      after: book, // Data setelah perubahan
+                    },
+                    timestamp: new Date().toISOString(),
+                    synced: false, // Data belum tersinkronisasi
+                  };
+    
+                  logStore.add(updateLog).onsuccess = () => {
+                    console.log("Log update status pinjam berhasil ditambahkan:", updateLog);
+                  };
+    
                   // Tambahkan data peminjaman ke peminjamanStore
                   peminjamanStore.add(data).onsuccess = () => {
+                    // Log untuk menambahkan data peminjaman
+                    const insertLog = {
+                      operation: "insert",
+                      table: "peminjamans", // Nama tabel peminjaman
+                      recordId: bookId, // ID buku yang dipinjam
+                      data: data, // Data peminjaman
+                      timestamp: new Date().toISOString(),
+                      synced: false, // Data belum tersinkronisasi
+                    };
+    
+                    logStore.add(insertLog).onsuccess = () => {
+                      console.log("Log insert data peminjaman berhasil ditambahkan:", insertLog);
+                    };
+    
                     $("#borrowModal").modal("hide");
                     fetchBooks(); // Refresh tampilan buku
                   };
@@ -867,16 +1025,14 @@ $('#filter-status').on('change', function () {
             };
       
             bookRequest.onerror = (event) => {
-              console.log(
-                "Terjadi kesalahan saat mengambil buku:",
-                event.target.error
-              );
+              console.log("Terjadi kesalahan saat mengambil buku:", event.target.error);
             };
           })
           .catch((error) => {
             console.log("Terjadi kesalahan saat membuka database:", error);
           });
-      }      
+    }
+          
 
       
 let currentBookId;  // Variabel global untuk menyimpan ID buku yang sedang dibuka
@@ -944,31 +1100,63 @@ function openDetailModalPinjam(id) {
 
 async function favoritBook(id) {
   const db = await openDB(); // Buka database
-  const transaction = db.transaction(storeName, "readwrite");
+  const transaction = db.transaction([storeName, "SyncQueue"], "readwrite");
   const store = transaction.objectStore(storeName);
+  const logStore = transaction.objectStore("SyncQueue"); // Object store untuk log
   const request = store.get(id);
 
   request.onsuccess = () => {
     const book = request.result;
 
-    // Toggle status favorit
-    book.favorit = !book.favorit;
+    if (book) {
+      const originalFavoritStatus = book.favorit; // Menyimpan status favorit sebelum perubahan
 
-    // Update database
-    const updateRequest = store.put(book);
-    updateRequest.onsuccess = () => {
-      console.log("Status favorit berhasil diperbarui.");
-      fetchBooks(); // Perbarui tampilan tabel
-    };
-    updateRequest.onerror = () => {
-      console.error("Gagal memperbarui status favorit.");
-    };
+      // Toggle status favorit
+      book.favorit = !book.favorit;
+
+      // Update status favorit di database
+      const updateRequest = store.put(book);
+      updateRequest.onsuccess = () => {
+        console.log("Status favorit berhasil diperbarui.");
+
+        // Membuat log perubahan
+        const log = {
+          operation: "update", // Jenis operasi: update
+          table: storeName, // Nama tabel
+          recordId: book.id, // ID buku yang diubah
+          changes: {
+            before: { favorit: originalFavoritStatus }, // Status favorit sebelum update
+            after: { favorit: book.favorit }, // Status favorit setelah update
+          },
+          timestamp: new Date().toISOString(), // Waktu perubahan
+          synced: false, // Status sinkronisasi belum dilakukan
+        };
+
+        // Menambahkan log perubahan ke dalam SyncQueue
+        const logRequest = logStore.add(log);
+        logRequest.onsuccess = () => {
+          console.log("Log sinkronisasi berhasil ditambahkan:", log);
+        };
+        logRequest.onerror = () => {
+          console.error("Gagal menambahkan log sinkronisasi.");
+        };
+
+        // Memperbarui tampilan tabel
+        fetchBooks();
+      };
+      updateRequest.onerror = () => {
+        console.error("Gagal memperbarui status favorit.");
+      };
+    } else {
+      console.error("Buku dengan ID " + id + " tidak ditemukan.");
+    }
   };
 
   request.onerror = () => {
     console.error("Gagal mengambil data buku.");
   };
 }
+
 
 
       $(document).ready(function () {
@@ -994,6 +1182,169 @@ $(document).on("click", ".detail-btn", function () {
 });
 
       
+
+// Fungsi untuk melakukan sinkronisasi log
+async function syncLogs() {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(["SyncQueue"], "readonly");
+    const logStore = transaction.objectStore("SyncQueue");
+
+    const allLogs = await getAllLogs(logStore);
+
+    if (allLogs.length > 0) {
+      console.log("Log ditemukan, mengirim ke server:", allLogs);
+      await sendLogsToServer(allLogs);
+    } else {
+      console.log("Tidak ada log untuk disinkronkan.");
+    }
+  } catch (error) {
+    console.error("Gagal melakukan sinkronisasi log:", error);
+  }
+}
+
+// Fungsi untuk mengambil semua log dari IndexedDB
+function getAllLogs(logStore) {
+  return new Promise((resolve, reject) => {
+    const logs = [];
+    const cursorRequest = logStore.openCursor();
+
+    cursorRequest.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        logs.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve(logs);
+      }
+    };
+
+    cursorRequest.onerror = (event) => {
+      reject("Gagal mengambil log dari SyncQueue: " + event.target.error);
+    };
+  });
+}
+
+async function sendLogsToServer(logs) {
+  // Kirim setiap log berdasarkan operasi
+  for (const log of logs) {
+    let endpoint = '';
+    let bodyData = {};
+
+    // Menentukan endpoint dan body data berdasarkan operasi
+    switch (log.operation) {
+      case 'insert':
+        endpoint = '/api/books';  // URL untuk insert
+        bodyData = {
+          judul: log.judul || "Unknown Title",
+          pengarang: log.pengarang || "Unknown Author",
+          genre: log.genre || "Fiksi",
+          tahun_terbit: log.tahun_terbit || new Date().getFullYear(),
+          penerbit: log.penerbit || "Unknown Publisher",
+          jumlah_halaman: log.jumlah_halaman || 0,
+          pinjam: log.pinjam || false,
+          favorit: log.favorit || false,
+          peminjam: log.peminjam || "Unknown Borrower",
+          tanggal_pinjam: log.tanggal_pinjam || new Date().toISOString(),
+          tanggal_kembali: log.tanggal_kembali || new Date().toISOString(),
+          kontak: log.kontak || "Unknown Contact",
+          catatan: log.catatan || "",
+        };
+        break;
+
+      case 'update':
+        if (!log.recordId) {
+          console.error("ID buku untuk update tidak ditemukan.");
+          return; // Pastikan ada ID untuk update
+        }
+        endpoint = `/api/books/${log.recordId}`;  // URL untuk update dengan ID buku
+        bodyData = {
+          judul: log.judul || "Updated Title",
+          pengarang: log.pengarang || "Updated Author",
+          genre: log.genre || "Updated Genre",
+          tahun_terbit: log.tahun_terbit || new Date().getFullYear(),
+          penerbit: log.penerbit || "Updated Publisher",
+          jumlah_halaman: log.jumlah_halaman || 0,
+          pinjam: log.pinjam || false,
+          favorit: log.favorit || false,
+          peminjam: log.peminjam || "Updated Borrower",
+          tanggal_pinjam: log.tanggal_pinjam || new Date().toISOString(),
+          tanggal_kembali: log.tanggal_kembali || new Date().toISOString(),
+          kontak: log.kontak || "Updated Contact",
+          catatan: log.catatan || "Updated Notes",
+        };
+        break;
+
+      case 'delete':
+        if (!log.recordId) {
+          console.error("ID buku untuk delete tidak ditemukan.");
+          return; // Pastikan ada ID untuk delete
+        }
+        endpoint = `/api/books/${log.recordId}`;  // URL untuk delete dengan ID buku
+        bodyData = {};  // Tidak ada data yang perlu dikirim untuk delete
+        break;
+
+      default:
+        console.error(`Operasi tidak dikenali: ${log.operation}`);
+        return; // Skip log jika operasi tidak dikenali
+    }
+
+    // Mengirimkan log ke server sesuai endpoint
+    try {
+      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+        method: log.operation === 'delete' ? "DELETE" : "POST",  // Gunakan DELETE untuk operasi delete
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: log.operation === 'delete' ? null : JSON.stringify(bodyData),  // Tidak ada body untuk DELETE
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`Log ${log.operation} berhasil disinkronkan:`, data);
+
+      // Tandai log sebagai sudah disinkronkan setelah berhasil
+      await markLogAsSynced(log);
+
+    } catch (error) {
+      console.error(`Gagal mengirim log ${log.operation} ke server:`, error);
+    }
+  }
+}
+
+// Fungsi untuk menandai log sebagai sudah disinkronkan
+async function markLogAsSynced(log) {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(["SyncQueue"], "readwrite");
+    const logStore = transaction.objectStore("SyncQueue");
+
+    log.synced = true; // Tandai log sebagai sudah disinkronkan
+    logStore.put(log);
+
+    transaction.oncomplete = () => {
+      console.log("Log berhasil ditandai sebagai disinkronkan.");
+    };
+
+    transaction.onerror = (event) => {
+      console.error("Gagal menandai log sebagai disinkronkan:", event.target.error);
+    };
+  } catch (error) {
+    console.error("Gagal membuka IndexedDB untuk menandai log:", error);
+  }
+}
+
+$(document).ready(function () {
+  // Tombol untuk sinkronisasi log
+  $("#syncLogsBtn").click(function () {
+    syncLogs(); // Panggil fungsi untuk sinkronisasi log
+  });
+});
+
+
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

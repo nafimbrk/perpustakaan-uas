@@ -84,30 +84,46 @@ class BooksController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'judul' => 'required',
-            'pengarang' => 'required',
-            'genre' => 'required',
-            'tahun_terbit' => 'required',
-            'penerbit' => 'required',
-            'jumlah_halaman' => 'required'
+        // Validasi data yang diterima
+        $validatedData = $request->validate([
+            'judul' => 'required|string',
+            'pengarang' => 'required|string',
+            'genre' => 'required|in:Fiksi,Non-Fiksi,Sains',
+            'tahun_terbit' => 'required|integer',
+            'penerbit' => 'required|string',
+            'jumlah_halaman' => 'required|integer',
+            'pinjam' => 'required|boolean',
+            'favorit' => 'required|boolean',
+            'peminjam' => 'required|string',
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date',
+            'kontak' => 'required|string',
+            'catatan' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        // Simpan data buku ke tabel 'books'
+        $book = Books::create([
+            'judul' => $validatedData['judul'],
+            'pengarang' => $validatedData['pengarang'],
+            'genre' => $validatedData['genre'],
+            'tahun_terbit' => $validatedData['tahun_terbit'],
+            'penerbit' => $validatedData['penerbit'],
+            'jumlah_halaman' => $validatedData['jumlah_halaman'],
+            'pinjam' => $validatedData['pinjam'],
+            'favorit' => $validatedData['favorit'],
+        ]);
 
-        $books = Books::create($request->all());
-        
-        return response()->json([
-            'status' => true,
-            'message' => 'data berhasil dimasukkan',
-            'data' => $books
-        ], 201);
+        // Simpan data peminjaman ke tabel 'peminjamans'
+        Peminjaman::create([
+            'book_id' => $book->id,
+            'peminjam' => $validatedData['peminjam'],
+            'tanggal_pinjam' => $validatedData['tanggal_pinjam'],
+            'tanggal_kembali' => $validatedData['tanggal_kembali'],
+            'kontak' => $validatedData['kontak'],
+            'catatan' => $validatedData['catatan'],
+        ]);
+
+        return response()->json(['message' => 'Data berhasil disimpan'], 201);
     }
 
     /**
